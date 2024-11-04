@@ -14,6 +14,9 @@ class User extends Authenticatable
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, HasApiTokens;
 
+    protected $table = 'users';
+    protected $guarded = ['id'];
+
     /**
      * The attributes that are mass assignable.
      *
@@ -24,6 +27,11 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
+        'phone_number',
+        'profile_picture',
+        'address',
+        'ages',
+        'status',
     ];
 
     /**
@@ -62,5 +70,10 @@ class User extends Authenticatable
     public function isDokter()
     {
         return $this->role === 'dokter';
+    }
+
+    public function chats()
+    {
+        return $this->hasMany(Chat::class, 'created_by');
     }
 }
