@@ -33,6 +33,10 @@ class User extends Authenticatable
         'ages',
         'status',
         'gender',
+        'description',
+        'str_number',
+        'school',
+        'experience',
     ];
 
     /**
