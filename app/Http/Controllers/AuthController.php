@@ -16,11 +16,17 @@ class AuthController extends Controller
     {
         $request->validate([
             'phone_number' => 'required|string|max:15',
-            'role' => 'nullable|string|in:user,dokter,admin', // Optional role, defaults to 'user'
+            'name' => 'nullable|string|max:255',
+            'password' => 'nullable|string|confirmed|min:6',
+            'email' => 'nullable|email|unique:users',
+            'role' => 'nullable|string|in:user,dokter,admin', 
         ]);
 
         $user = User::create([
             'phone_number' => $request->phone_number,
+            'name' => $request->name,
+            'password' => bcrypt($request->password),
+            'email' => $request->email,
             'role' => $request->role ?? 'user',
         ]);
 
