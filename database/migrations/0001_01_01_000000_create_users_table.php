@@ -13,18 +13,20 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            $table->string('email')->unique();
+            $table->string('name')->nullable();
+            $table->string('email')->unique()->nullable();
             $table->timestamp('email_verified_at')->nullable();
-            $table->string('password');
+            $table->string('password')->nullable();
             $table->string('role')->default('user');
-            $table->string('phone_number');
-            $table->timestamp('phone_number_verified_at')->nullable();
+            $table->string('phone_number')->unique();
+            $table->timestamp('phone_verified_at')->nullable();
             $table->string('profile_picture')->nullable();
             $table->string('address')->nullable();
             $table->string('ages')->nullable();
-            $table->string('status')->nullable();
+            $table->enum('gender',['laki-laki','perempuan'])->nullable();                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
+            $table->enum('status', ['berkeluarga', 'tidak berkeluarga'])->nullable();
             $table->string('description')->nullable();
+            $table->string('notification_token')->nullable();
             $table->rememberToken();
             $table->timestamps();
         });
