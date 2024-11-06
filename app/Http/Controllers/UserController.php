@@ -25,8 +25,6 @@ class UserController extends Controller
         ->where('id', '!=', auth()->user()->id)
         ->get();
 
-        $users->profile_picture = url('images-dokter/' . $users->profile_picture);
-
         return response()->json($users);
     }
 
