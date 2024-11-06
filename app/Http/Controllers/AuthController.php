@@ -92,4 +92,84 @@ class AuthController extends Controller
             'is_dokter' => $request->user()->isDokter(),
         ]);
     } 
+
+    /**
+     * Log in an existing user.
+     */
+    public function loginForadmin(Request $request)
+    {
+        $request->validate([
+            'login' => 'required|string',
+            'password' => 'required|string',
+        ], [
+            'login.required' => 'Email or name is required.',
+            'password.required' => 'Password is required.',
+        ]);
+        
+        $user = User::where('email', $request->login)
+                    ->orWhere('name', $request->login)
+                    ->first();
+    
+        if (!$user || !Hash::check($request->password, $user->password)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'The provided credentials are incorrect.',
+            ], 401);
+        }
+        
+        $token = $user->createToken('auth_token')->plainTextToken;
+    
+        // // Update the notification token if provided
+        // if ($request->filled('notification_token')) {
+        //     $user->notification_token = $request->notification_token;
+        //     $user->save();
+        // }
+    
+        return response()->json([
+            'success' => true,
+            'access_token' => $token,
+            'token_type' => 'Bearer',
+            'admin' => $user->only(['id', 'name', 'email', 'role']),  // Include role in response
+        ]);
+    }
+
+     /**
+     * Log in an existing user.
+     */
+    public function loginFordokter(Request $request)
+    {
+        $request->validate([
+            'login' => 'required|string',
+            'password' => 'required|string',
+        ], [
+            'login.required' => 'Email or username is required.',
+            'password.required' => 'Password is required.',
+        ]);
+        
+        $user = User::where('email', $request->login)
+                    ->orWhere('name', $request->login)
+                    ->first();
+    
+        if (!$user || !Hash::check($request->password, $user->password)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'The provided credentials are incorrect.',
+            ], 401);
+        }
+        
+        $token = $user->createToken('auth_token')->plainTextToken;
+    
+        // // Update the notification token if provided
+        // if ($request->filled('notification_token')) {
+        //     $user->notification_token = $request->notification_token;
+        //     $user->save();
+        // }
+    
+        return response()->json([
+            'success' => true,
+            'access_token' => $token,
+            'token_type' => 'Bearer',
+            'dokter' => $user->only(['id', 'name', 'email', 'role']),  // Include role in response
+        ]);
+    }
 }

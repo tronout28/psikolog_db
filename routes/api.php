@@ -12,6 +12,9 @@ use App\Http\Controllers\UserController;
 Route::group(['prefix' => '/auth'], function () {
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/login-admin', [AuthController::class, 'loginForAdmin']);
+    Route::post('/login-doctor', [AuthController::class, 'loginFordokter']);
+
     Route::get('/user-detail', [AuthController::class, 'detailUser'])->middleware('auth:sanctum');
     Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
     Route::get('/check-role', [AuthController::class, 'checkRole'])->middleware('auth:sanctum');
@@ -37,3 +40,8 @@ Route::group(['prefix' => '/user','role:user',], function () {
 Route::group(['prefix' => '/admin','role:admin','auth:sanctum'], function () {
     Route::post('/register-dokter', [AdminController::class, 'registerDoctorfromAdmin']);
 });
+
+Route::group(['prefix' => '/doctor','role:dokter','auth:sanctum'], function () {
+
+});
+
