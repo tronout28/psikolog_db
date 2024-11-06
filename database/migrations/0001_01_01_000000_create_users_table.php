@@ -22,11 +22,16 @@ return new class extends Migration
             $table->timestamp('phone_verified_at')->nullable();
             $table->string('profile_picture')->nullable();
             $table->string('address')->nullable();
-            $table->string('ages')->nullable();
+            $table->integer('ages')->nullable();
             $table->enum('gender',['laki-laki','perempuan'])->nullable();                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
             $table->enum('status', ['berkeluarga', 'tidak berkeluarga'])->nullable();
             $table->string('description')->nullable();
             $table->string('notification_token')->nullable();
+            $table->double('rating')->default(0)->nullable();
+            $table->integer('str_number')->nullable();
+            $table->string('school')->nullable();
+            $table->string('experience')->nullable();
+
             $table->rememberToken();
             $table->timestamps();
         });

@@ -8,6 +8,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\ChatMessageController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\BukuController;
 
 Route::group(['prefix' => '/auth'], function () {
     Route::post('/register', [AuthController::class, 'register']);
@@ -39,9 +40,21 @@ Route::group(['prefix' => '/user','role:user',], function () {
 
 Route::group(['prefix' => '/admin','role:admin','auth:sanctum'], function () {
     Route::post('/register-dokter', [AdminController::class, 'registerDoctorfromAdmin']);
+    Route::post('/update-dokter', [AdminController::class, 'updateDoctor']);
+    Route::get('/detail-dokter/{id}', [AdminController::class, 'showDetailDoctor']);
 });
 
 Route::group(['prefix' => '/doctor','role:dokter','auth:sanctum'], function () {
 
 });
+
+Route::group(['prefix' => '/book'], function () {
+    Route::post('/insert', [BukuController::class, 'insertBook']);
+    Route::post('/update/{id}', [BukuController::class, 'updateBook']);
+    Route::post('/is-avaible/{id}', [BukuController::class, 'updateisavaible']);
+    Route::get('/all', [BukuController::class, 'index']);
+    Route::get('/show/{id}', [BukuController::class, 'show']);
+});
+
+
 
