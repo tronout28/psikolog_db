@@ -59,11 +59,13 @@ class AdminController extends Controller
         ], 201);
     }
 
-    public function updateDoctor(Request $request)
+    public function updateDoctor(Request $request, $id)
     {
+        $user = User::find($id);
+
         $request->validate([
             'name' => 'nullable|string',
-            'email' => 'nullable|email',
+            'email' => 'nullable|email|unique:users,email,' . $id,
             'phone_number' => 'nullable|string',
             'ages' => 'nullable|string',
             'address' => 'nullable|string',
@@ -74,8 +76,6 @@ class AdminController extends Controller
             'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg',
         ]);
 
-        $user = User::where('email', $request->email)->first();
-
         if (!$user) {
             return response()->json([
                 'status' => 'error',
@@ -83,17 +83,15 @@ class AdminController extends Controller
             ], 404);
         }
 
-        $user->update([
-            'name' => $request->name,
-            'email' => $request->email,
-            'phone_number' => $request->phone_number,
-            'ages' => $request->ages,
-            'address' => $request->address,
-            'role' => $request->role ?? 'dokter',
-            'str_number' => $request->str_number,
-            'school' => $request->school,
-            'experience' => $request->experience,
-        ]);
+        $user->name = $request->name;
+        $user->email = $request->email;
+        $user->phone_number = $request->phone_number;
+        $user->ages = $request->ages;
+        $user->address = $request->address;
+        $user->role = $request->role ?? 'dokter';
+        $user->str_number = $request->str_number;
+        $user->school = $request->school;
+        $user->experience = $request->experience;
 
         if ($request->hasFile('profile_picture')) {
             $image = $request->file('profile_picture');
@@ -108,6 +106,8 @@ class AdminController extends Controller
             // Simpan nama file gambar baru di database
             $user->profile_picture = $imageName;
         }
+
+        $user->save();
 
         $user->profile_picture = url('images-dokter/' . $user->profile_picture);
 

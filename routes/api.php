@@ -40,7 +40,7 @@ Route::group(['prefix' => '/user','role:user',], function () {
 
 Route::group(['prefix' => '/admin','role:admin','auth:sanctum'], function () {
     Route::post('/register-dokter', [AdminController::class, 'registerDoctorfromAdmin']);
-    Route::post('/update-dokter', [AdminController::class, 'updateDoctor']);
+    Route::post('/update-dokter/{id}', [AdminController::class, 'updateDoctor']);
     Route::get('/detail-dokter/{id}', [AdminController::class, 'showDetailDoctor']);
 });
 
