@@ -15,22 +15,15 @@ class AuthController extends Controller
     public function register(Request $request)
     {
         $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8|confirmed',
             'phone_number' => 'required|string|max:15',
             'role' => 'nullable|string|in:user,dokter,admin', // Optional role, defaults to 'user'
         ]);
 
         $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
             'phone_number' => $request->phone_number,
             'role' => $request->role ?? 'user',
         ]);
 
-        // Automatically log in the new user and generate token
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
@@ -46,17 +39,10 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $request->validate([
-            'email' => 'required|string|email',
-            'password' => 'required|string',
+            'phone_number' => 'required|string|max:15',
         ]);
 
-        $user = User::where('email', $request->email)->first();
-
-        if (! $user || ! Hash::check($request->password, $user->password)) {
-            throw ValidationException::withMessages([
-                'email' => ['The provided credentials are incorrect.'],
-            ]);
-        }
+        $user = User::where('phone_number', $request->phone_number)->first();
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
@@ -79,12 +65,11 @@ class AuthController extends Controller
         ]);
     }
 
-    /**
-     * Get the authenticated user.
-     */
-    public function user(Request $request)
+   public function detailUser(Request $request)
     {
-        return response()->json($request->user());
+        return response()->json([
+            'user' => $request->user(),
+        ]);
     }
 
     /**

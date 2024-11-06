@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\GetMessageRequest;
 use App\Http\Requests\StoreMessageRequest;
+use App\Models\Chat;
 use App\Models\ChatMessage;
+use App\Events\NewMessageSent;
 use GuzzleHttp\Psr7\Message;
 
 class ChatMessageController extends Controller
@@ -43,8 +45,16 @@ class ChatMessageController extends Controller
         $chatMessage = ChatMessage::create($data);
         $chatMessage->load('user');
 
-        // TODO send broadcast event to pusher and send notification to on signal services
+        /// TODO send broadcast event to pusher and send notification to on signal services
+       // $this->sendNotificationToOther($chatMessage);
 
         return response()->json([$chatMessage,'message has sent successfully'], 201);
+    }
+
+    private function sendNotificationToOther(ChatMessage $chatMessage)
+    {
+        //$chatId = $chatMessage->chat_id;
+
+       // broadcast(new NewMessageSent($chatMessage))->toOthers();
     }
 }
