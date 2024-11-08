@@ -9,6 +9,7 @@ use App\Http\Controllers\ChatController;
 use App\Http\Controllers\ChatMessageController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\BukuController;
+use App\Http\Controllers\OrderController;
 
 Route::group(['prefix' => '/auth'], function () {
     Route::post('/register', [AuthController::class, 'register']);
@@ -23,8 +24,10 @@ Route::group(['prefix' => '/auth'], function () {
 
 Route::group(['prefix' => '/accessall'], function () {
     Route::get('/all-user', [UserController::class, 'allUser']);
+    Route::get('/all-doctor', [AdminController::class, 'allDoctor']);
     Route::get('/allchat-user', [UserController::class, 'seeOnlyDoctor'])->middleware('auth:sanctum');
 });
+
 
 Route::middleware('auth:sanctum')->group(function () {
    Route::apiResource('chat', ChatController::class)->only(['index', 'store', 'show']);
@@ -56,5 +59,10 @@ Route::group(['prefix' => '/book'], function () {
     Route::get('/show/{id}', [BukuController::class, 'show']);
 });
 
+Route::group(['prefix' => '/payment','auth:sanctum'], function () {
+    Route::post('/checkout', [OrderController::class, 'checkoutbooks']);
+    Route::post('/midtrans-callback/{id}', [OrderController::class, 'callback']);
+    Route::post('/invoice/{id}', [OrderController::class, 'invoice']);
+});
 
 

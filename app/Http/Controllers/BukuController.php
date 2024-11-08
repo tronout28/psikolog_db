@@ -36,6 +36,7 @@ class BukuController extends Controller
             'message' => 'Buku has been inserted successfully',
         ], 201);
     }
+    
 
     public function index ()
     {
