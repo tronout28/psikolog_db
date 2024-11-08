@@ -41,7 +41,7 @@ Route::group(['prefix' => '/user','role:user',], function () {
     Route::post('/send-otp-phonenumber', [OtpController::class, 'sendOtpwithPhoneNumber']);
 });
 
-Route::group(['prefix' => '/admin','role:admin','middleware' => ['auth:sanctum']], function () {
+Route::group(['prefix' => '/admin','role:admin','auth:sanctum'], function () {
     Route::post('/register-dokter', [AdminController::class, 'registerDoctorfromAdmin']);
     Route::post('/update-dokter/{id}', [AdminController::class, 'updateDoctor']);
     Route::get('/detail-dokter/{id}', [AdminController::class, 'showDetailDoctor']);
