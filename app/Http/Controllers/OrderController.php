@@ -4,12 +4,21 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Order;
+use App\Models\Buku;
 
 class OrderController extends Controller
 {
+    public function __construct()
+    {
+        \Midtrans\Config::$serverKey = config('midtrans.server_key');
+        \Midtrans\Config::$isProduction = false;
+        \Midtrans\Config::$isSanitized = true;
+        \Midtrans\Config::$is3ds = true;
+    }
+
     public function checkoutBooks(Request $request)
     {
-        // Pastikan pengguna sudah terautentikasi
+        // Autentikasi pengguna
         $user = auth()->user();
         if (!$user) {
             return response()->json([
@@ -36,14 +45,9 @@ class OrderController extends Controller
             'status' => 'unpaid',
         ]);
 
-        // Set konfigurasi Midtrans
-        \Midtrans\Config::$serverKey = config('midtrans.server_key');
-        \Midtrans\Config::$isProduction = false;
-        \Midtrans\Config::$isSanitized = true;
-        \Midtrans\Config::$is3ds = true;
-
         // Cek apakah buku terkait ditemukan
-        if (!$order->buku) {
+        $buku = Buku::find($request->buku_id);
+        if (!$buku) {
             return response()->json([
                 'success' => false,
                 'message' => 'Buku not found for this order',
@@ -54,7 +58,7 @@ class OrderController extends Controller
         $params = [
             'transaction_details' => [
                 'order_id' => $order->id,
-                'gross_amount' => $order->buku->price,
+                'gross_amount' => $buku->price, // Harga buku sebagai jumlah transaksi
             ],
             'customer_details' => [
                 'name' => $request->name,
@@ -67,28 +71,58 @@ class OrderController extends Controller
         // Mendapatkan Snap Token dari Midtrans
         $snapToken = \Midtrans\Snap::getSnapToken($params);
 
-        // Membuat URL Snap yang bisa langsung digunakan oleh frontend
-        $snapUrl = "https://app.sandbox.midtrans.com/snap/v1/transactions/{$snapToken}";
+        // Membuat URL Snap untuk tampilan
+        $snapViewUrl = route('snap.view', ['orderId' => $order->id]);
 
         return response()->json([
             'success' => true,
             'message' => 'Order created successfully',
             'data' => $order,
             'snap_token' => $snapToken,
-            'snap_url' => $snapUrl,
+            'snap_view_url' => $snapViewUrl, // URL untuk tampilan Snap View
         ], 201);
     }
 
+    public function snapView($orderId)
+    {
+        // Cari pesanan berdasarkan ID
+        $order = Order::find($orderId);
+        if (!$order) {
+            abort(404, "Order not found");
+        }
+
+        // Parameter transaksi
+        $params = [
+            'transaction_details' => [
+                'order_id' => $order->id,
+                'gross_amount' => $order->buku->price,
+            ],
+            'customer_details' => [
+                'name' => $order->name,
+                'email' => $order->user->email,
+                'phone' => $order->phone_number,
+                'address' => $order->detailed_address,
+            ],
+        ];
+
+        $snapToken = \Midtrans\Snap::getSnapToken($params);
+
+        // Menampilkan Snap View dengan Snap Token
+        return view('snap_view', [
+            'snapToken' => $snapToken,
+            'order_id' => $order->id,
+        ]);
+    }
 
     public function callback(Request $request)
     {
-        $serverkey = config('midtrans.server_key');
+        $serverKey = config('midtrans.server_key');
+        $hashed = hash('sha512', $request->order_id . $request->status_code . $request->gross_amount . $serverKey);
 
-        $hashed = hash('sha512', $request->order_id . $request->status_code . $request->gross_amount. $serverkey);  
-         
+        // Verifikasi callback Midtrans
         if ($hashed == $request->signature_key) {
-            if ($request->transaction_status == 'capture') {
-                $order = Order::find($request->order_id);
+            $order = Order::find($request->order_id);
+            if ($request->transaction_status == 'capture' && $order) {
                 $order->update(['status' => 'paid']);
             }
         }
@@ -110,5 +144,4 @@ class OrderController extends Controller
             'data' => $order,
         ]);
     }
-
 }
