@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\User;
+use Illuminate\Validation\Rule;
 
 class AdminController extends Controller
 {
@@ -19,6 +20,8 @@ class AdminController extends Controller
             'role' => 'nullable|string|in:dokter', // Optional role, defaults to 'user'
             'str_number' => 'required|int',
             'school' => 'required|string',
+            'gender' => ['required', Rule::in(['laki-laki', 'perempuan'])],
+            'description' => 'required|string',
             'experience' => 'required|string',
             'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg',
         ]);
@@ -32,6 +35,8 @@ class AdminController extends Controller
             'address' => $request->address,
             'role' => $request->role ?? 'dokter',
             'str_number' => $request->str_number,
+            'gender' => $request->gender,
+            'description' => $request->description,
             'school' => $request->school,
             'experience' => $request->experience,
         ]);
@@ -137,5 +142,13 @@ class AdminController extends Controller
             'message' => 'Detail dokter',
         ], 200);
     }
+
+    public function allDoctor()
+    {
+        $users = User::where('role', 'dokter')->get();
+
+        return response()->json($users);
+    }
+    
 
 }

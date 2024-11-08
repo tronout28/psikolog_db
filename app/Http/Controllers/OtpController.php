@@ -81,6 +81,7 @@ class OtpController extends Controller
         ], 200);
     }
 
+    
     public function verifyOtp(Request $request)
     {
         $request->validate([
