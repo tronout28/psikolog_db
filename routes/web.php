@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Response;
+use App\Http\Controllers\OrderController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -56,3 +57,5 @@ Route::get('/images-dokter/{filename}', function ($filename) {
 
     return $response;
 });
+
+Route::get('/snap_view/{orderId}', [OrderController::class, 'snapView'])->name('snap.view');
