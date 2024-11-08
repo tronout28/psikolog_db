@@ -41,13 +41,13 @@ Route::group(['prefix' => '/user','role:user',], function () {
     Route::post('/send-otp-phonenumber', [OtpController::class, 'sendOtpwithPhoneNumber']);
 });
 
-Route::group(['prefix' => '/admin','role:admin','auth:sanctum'], function () {
+Route::group(['prefix' => '/admin','role:admin','middleware' => ['auth:sanctum']], function () {
     Route::post('/register-dokter', [AdminController::class, 'registerDoctorfromAdmin']);
     Route::post('/update-dokter/{id}', [AdminController::class, 'updateDoctor']);
     Route::get('/detail-dokter/{id}', [AdminController::class, 'showDetailDoctor']);
 });
 
-Route::group(['prefix' => '/doctor','role:dokter','auth:sanctum'], function () {
+Route::group(['prefix' => '/doctor','role:dokter','middleware' => ['auth:sanctum']], function () {
 
 });
 
@@ -59,7 +59,7 @@ Route::group(['prefix' => '/book'], function () {
     Route::get('/show/{id}', [BukuController::class, 'show']);
 });
 
-Route::group(['prefix' => '/payment','auth:sanctum'], function () {
+Route::group(['prefix' => '/payment','middleware' => ['auth:sanctum']], function () {
     Route::post('/checkout', [OrderController::class, 'checkoutbooks']);
     Route::post('/midtrans-callback/{id}', [OrderController::class, 'callback']);
     Route::post('/invoice/{id}', [OrderController::class, 'invoice']);
