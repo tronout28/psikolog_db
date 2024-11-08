@@ -89,9 +89,7 @@ class OrderController extends Controller
         if ($hashed == $request->signature_key) {
             if ($request->transaction_status == 'capture') {
                 $order = Order::find($request->order_id);
-                $order->status = 'paid';
-                $order->total_price = $request->gross_amount;
-                $order->save();
+                $order->update(['status' => 'paid']);
             }
         }
     }

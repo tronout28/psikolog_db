@@ -61,8 +61,7 @@ Route::group(['prefix' => '/book'], function () {
 
 Route::group(['prefix' => '/payment','middleware' => ['auth:sanctum']], function () {
     Route::post('/checkout', [OrderController::class, 'checkoutbooks']);
-    Route::post('/midtrans-callback/{id}', [OrderController::class, 'callback']);
     Route::post('/invoice/{id}', [OrderController::class, 'invoice']);
 });
 
-
+Route::post('/midtrans-callback ', [OrderController::class, 'callback']);
