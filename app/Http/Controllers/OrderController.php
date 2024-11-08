@@ -9,7 +9,15 @@ class OrderController extends Controller
 {
     public function checkoutBooks(Request $request)
     {
-        
+        // Pastikan pengguna sudah terautentikasi
+        $user = auth()->user();
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User not authenticated',
+            ], 401);
+        }
+
         // Validasi input
         $request->validate([
             'buku_id' => 'required|exists:bukus,id',
@@ -18,13 +26,10 @@ class OrderController extends Controller
             'phone_number' => 'required|string',
         ]);
 
-        // Mendapatkan user yang terautentikasi
-        $users = auth()->user();
-
         // Buat pesanan baru di database
         $order = Order::create([
             'buku_id' => $request->buku_id,
-            'user_id' => $users->id,
+            'user_id' => $user->id,
             'name' => $request->name,
             'detailed_address' => $request->detailed_address,
             'phone_number' => $request->phone_number,
@@ -37,6 +42,14 @@ class OrderController extends Controller
         \Midtrans\Config::$isSanitized = true;
         \Midtrans\Config::$is3ds = true;
 
+        // Cek apakah buku terkait ditemukan
+        if (!$order->buku) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Buku not found for this order',
+            ], 404);
+        }
+
         // Parameter untuk transaksi
         $params = [
             'transaction_details' => [
@@ -45,7 +58,7 @@ class OrderController extends Controller
             ],
             'customer_details' => [
                 'name' => $request->name,
-                'email' => $users->email,
+                'email' => $user->email,
                 'phone' => $request->phone_number,
                 'address' => $request->detailed_address,
             ],
@@ -62,9 +75,10 @@ class OrderController extends Controller
             'message' => 'Order created successfully',
             'data' => $order,
             'snap_token' => $snapToken,
-            'snap_url' => $snapUrl, // Menyertakan URL Snap di respons JSON
+            'snap_url' => $snapUrl,
         ], 201);
     }
+
 
     public function callback(Request $request)
     {
