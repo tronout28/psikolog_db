@@ -58,4 +58,20 @@ Route::get('/images-dokter/{filename}', function ($filename) {
     return $response;
 });
 
+Route::get('/images-banner/{filename}', function ($filename) {
+    $path = public_path('images-banner/'.$filename);
+
+    if (! File::exists($path)) {
+        abort(404);
+    }
+
+    $file = File::get($path);
+    $type = File::mimeType($path);
+
+    $response = Response::make($file, 200);
+    $response->header('Content-Type', $type);
+
+    return $response;
+});
+
 Route::get('/snap_view/{orderId}', [OrderController::class, 'snapView'])->name('snap.view');

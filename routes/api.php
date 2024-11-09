@@ -1,15 +1,19 @@
 <?php
 
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\AlamatUserController;
 use App\Http\Controllers\OtpController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\BannerController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\ChatMessageController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\BukuController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\PaketController;
+use App\Http\Controllers\VoucherController;
 
 Route::group(['prefix' => '/auth'], function () {
     Route::post('/register', [AuthController::class, 'register']);
@@ -26,13 +30,20 @@ Route::group(['prefix' => '/accessall'], function () {
     Route::get('/all-user', [UserController::class, 'allUser']);
     Route::get('/all-doctor', [AdminController::class, 'allDoctor']);
     Route::get('/allchat-user', [UserController::class, 'seeOnlyDoctor'])->middleware('auth:sanctum');
+    Route::get('/all-orders', [OrderController::class, 'getOrders']);
+});
+
+Route::group(['prefix' => '/order','middleware' => ['auth:sanctum']], function () {
+    Route::get('/histori', [OrderController::class, 'histories']);
 });
 
 
 Route::middleware('auth:sanctum')->group(function () {
    Route::apiResource('chat', ChatController::class)->only(['index', 'store', 'show']);
-   Route::apiResource('chat_message', ChatMessageController::class)->only(['index', 'store']);
-});
+   Route::apiResource('chat_message', ChatMessageController::class)->only(['index', 'store'])
+        ->middleware('chat.access')
+        ->only(['store']);
+    });
 
 Route::group(['prefix' => '/user','role:user',], function () {
     Route::post('/create-profile', [UserController::class, 'createProfileUser'])->middleware('auth:sanctum');
@@ -61,7 +72,36 @@ Route::group(['prefix' => '/book'], function () {
 
 Route::group(['prefix' => '/payment','middleware' => ['auth:sanctum']], function () {
     Route::post('/checkout', [OrderController::class, 'checkoutbooks']);
+    Route::post('/checkout-paket', [OrderController::class, 'checkoutpaket']);
+    Route::get('/history', [OrderController::class, 'histories']);
 });
 
 Route::post('/midtrans-callback ', [OrderController::class, 'callback']);
 Route::get('/payment/invoice/{id}', [OrderController::class, 'invoice']);
+Route::get('/all-orders', [OrderController::class, 'getOrders']);
+
+Route::group(['prefix' => '/paket',], function () {
+    Route::post('/add-paket', [PaketController::class, 'store']);
+    Route::get('/all-paket', [PaketController::class, 'index']);
+    Route::get('/paket-dokter/{id}', [PaketController::class, 'showpaketuser']);
+});
+
+Route::group(['prefix' => '/voucher',], function () {
+    Route::post('/add-voucher', [VoucherController::class, 'store']);
+});
+
+Route::group(['prefix' => '/banner',], function () {
+    Route::post('/add-banner', [BannerController::class, 'inputBanner']);
+    Route::delete('/delete', [BannerController::class, 'deleteBanner']);
+    Route::get('/all-banner', [BannerController::class, 'index']);
+    Route::get('/show-banner/{id}', [BannerController::class, 'detailBanner']);
+});
+
+Route::group(['prefix' => '/alamat','middleware' => ['auth:sanctum']], function () {
+    Route::post('/add-alamat', [AlamatUserController::class, 'store']);
+    Route::get('/all-alamat', [AlamatUserController::class, 'index']);
+    Route::put('/update-alamat/{id}', [AlamatUserController::class, 'update']);
+    Route::delete('/delete-alamat/{id}', [AlamatUserController::class, 'destroy']);
+    Route::put('/select-alamat/{id}', [AlamatUserController::class, 'selectAlamat']);
+    Route::get('/show-alamat/{id}', [AlamatUserController::class, 'showdetailalamat']);
+});

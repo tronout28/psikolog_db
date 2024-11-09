@@ -11,8 +11,14 @@ class Order extends Model
     protected $fillable = [
         'user_id',
         'buku_id',
+        'paket_id',
+        'paket_transaction_id',
+        'voucher_id',
+        'voucher_usage_id',
         'name',
         'detailed_address',
+        'postal_code',
+        'note',
         'phone_number',
         'total_price',
         'status',
@@ -27,5 +33,25 @@ class Order extends Model
     public function buku()
     {
         return $this->belongsTo(Buku::class);
+    }
+
+    public function paket()
+    {
+        return $this->belongsTo(Paket::class);
+    }
+
+    public function paketTransaction()
+    {
+        return $this->belongsTo(PaketTransaction::class);
+    }
+
+    public function voucher()
+    {
+        return $this->belongsTo(Voucher::class);
+    }
+
+    public function voucherUsage()
+    {
+        return $this->belongsTo(VoucherUsage::class);
     }
 }
