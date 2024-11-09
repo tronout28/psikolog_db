@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
 
 
 class User extends Authenticatable
@@ -63,6 +65,10 @@ class User extends Authenticatable
         ];
     }
 
+    public function orders(): HasMany {
+        return $this->hasMany(Order::class);
+    }
+
     public function isAdmin()
     {
         return $this->role === 'admin';
@@ -81,5 +87,10 @@ class User extends Authenticatable
     public function chats()
     {
         return $this->hasMany(Chat::class, 'created_by');
+    }
+
+    public function paket()
+    {
+        return $this->hasMany(Paket::class, 'user_id');
     }
 }

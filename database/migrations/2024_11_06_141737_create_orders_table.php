@@ -16,6 +16,7 @@ return new class extends Migration
             $table->unsignedBigInteger('user_id');
             $table->unsignedBigInteger('buku_id')->nullable();
             $table->unsignedBigInteger('paket_id')->nullable();
+            $table->unsignedBigInteger('paket_transaction_id')->nullable();
             $table->unsignedBigInteger('voucher_id')->nullable();
 
             $table->string('name');
@@ -23,11 +24,14 @@ return new class extends Migration
             $table->string('phone_number');
             $table->bigInteger('total_price')->nullable();
             $table->enum('status',['paid','unpaid'])->default('unpaid');
+            $table->string('postal_code')->nullable();
+            $table->string('note')->nullable();
             $table->timestamps();
 
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
             $table->foreign('buku_id')->references('id')->on('bukus')->onDelete('cascade');
             $table->foreign('paket_id')->references('id')->on('pakets')->onDelete('cascade');
+            $table->foreign('paket_transaction_id')->references('id')->on('paket_transactions')->onDelete('cascade');
             $table->foreign('voucher_id')->references('id')->on('vouchers')->onDelete('cascade');
         });
         

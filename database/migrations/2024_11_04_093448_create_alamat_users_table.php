@@ -11,14 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('pakets', function (Blueprint $table) {
+        Schema::create('alamat_users', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('user_id');
-            $table->string('title');
-            $table->enum('paket_type', ['3day', '7day', '30day', 'realtime']);
-            $table->integer('price');
-            $table->timestamps();
+            $table->string('name')->nullable();
+            $table->string('address')->nullable();
+            $table->string('phone_number')->nullable();
+            $table->string('postal_code')->nullable();
+            $table->string('note')->nullable();
+            $table->boolean('is_selected')->default(false);
 
+            $table->timestamps();
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
         });
     }
@@ -28,6 +31,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('pakets');
+        Schema::dropIfExists('alamat_users');
     }
 };

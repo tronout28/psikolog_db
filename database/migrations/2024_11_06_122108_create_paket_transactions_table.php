@@ -11,15 +11,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('pakets', function (Blueprint $table) {
+        Schema::create('paket_transactions', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('user_id');
-            $table->string('title');
-            $table->enum('paket_type', ['3day', '7day', '30day', 'realtime']);
-            $table->integer('price');
+            $table->unsignedBigInteger('paket_id');
+            $table->enum('status',['active','inactive'])->default('inactive');
+            $table->timestamp('expiry_date')->nullable();
             $table->timestamps();
 
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+            $table->foreign('paket_id')->references('id')->on('pakets')->onDelete('cascade');
         });
     }
 
@@ -28,6 +29,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('pakets');
+        Schema::dropIfExists('paket_transactions');
     }
 };
