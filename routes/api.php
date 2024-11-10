@@ -88,6 +88,8 @@ Route::group(['prefix' => '/paket',], function () {
 
 Route::group(['prefix' => '/voucher',], function () {
     Route::post('/add-voucher', [VoucherController::class, 'store']);
+    Route::delete('/delete', [VoucherController::class, 'destroy']);
+    Route::get('/all-voucher', [VoucherController::class, 'index']);
 });
 
 Route::group(['prefix' => '/banner',], function () {

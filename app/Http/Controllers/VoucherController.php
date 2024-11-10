@@ -133,5 +133,12 @@ class VoucherController extends Controller
 
         return response()->json(['message' => 'Voucher deleted successfully'], 200);
     }
+
+    public function index()
+    {
+        $vouchers = Voucher::all();
+
+        return response()->json(['vouchers' => $vouchers], 200);
+    }
 }
 
