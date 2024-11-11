@@ -25,84 +25,55 @@ class OrderController extends Controller
 
     public function checkoutBooks(Request $request)
     {
-        // Authenticate the user
         $user = auth()->user();
         if (!$user) {
-            return response()->json([
-                'success' => false,
-                'message' => 'User not authenticated',
-            ], 401);
+            return response()->json(['success' => false, 'message' => 'User not authenticated'], 401);
         }
 
-         // Get the selected address
         $selectedAddress = AlamatUser::where('user_id', $user->id)->where('is_selected', true)->first();
         if (!$selectedAddress) {
-            return response()->json([
-                'success' => false,
-                'message' => 'No address selected',
-            ], 400);
+            return response()->json(['success' => false, 'message' => 'No address selected'], 400);
         }
 
-        // Validate input
         $request->validate([
             'buku_id' => 'required|exists:bukus,id',
             'voucher_code' => 'nullable|string|exists:vouchers,code',
         ]);
 
-        // Find the book
         $buku = Buku::find($request->buku_id);
         if (!$buku) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Book not found for this order',
-            ], 404);
+            return response()->json(['success' => false, 'message' => 'Book not found for this order'], 404);
         }
 
-        // Start with the original price of the book
         $totalPrice = $buku->price;
 
-        // Apply voucher if provided
         $voucher = null;
         if ($request->voucher_code) {
             $voucher = Voucher::where('code', $request->voucher_code)
                 ->where('is_active', true)
                 ->where(function ($query) {
-                    $query->whereNull('expiry_date')
-                        ->orWhere('expiry_date', '>', Carbon::now());
+                    $query->whereNull('expiry_date')->orWhere('expiry_date', '>', Carbon::now());
                 })
                 ->first();
 
             if (!$voucher) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Invalid or expired voucher code.',
-                ], 400);
+                return response()->json(['success' => false, 'message' => 'Invalid or expired voucher code.'], 400);
             }
 
-            // Check if the user has already used this voucher
-            $hasUsedVoucher = VoucherUsage::where('user_id', $user->id)
-                ->where('voucher_id', $voucher->id)
-                ->exists();
-
+            $hasUsedVoucher = VoucherUsage::where('user_id', $user->id)->where('voucher_id', $voucher->id)->exists();
             if ($hasUsedVoucher) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'You have already used this voucher.',
-                ], 400);
+                return response()->json(['success' => false, 'message' => 'You have already used this voucher.'], 400);
             }
 
-            // Apply discount based on voucher type
             if ($voucher->discount_amount) {
                 $totalPrice -= min($voucher->discount_amount, $totalPrice);
             } elseif ($voucher->discount_percentage) {
                 $totalPrice -= ($voucher->discount_percentage / 100) * $totalPrice;
             }
 
-            // Ensure total price doesn't go below zero
             $totalPrice = max(0, $totalPrice);
         }
 
-        // Create a new order in the database with the discounted total price
         $order = Order::create([
             'buku_id' => $request->buku_id,
             'user_id' => $user->id,
@@ -116,18 +87,14 @@ class OrderController extends Controller
             'voucher_id' => $voucher ? $voucher->id : null,
         ]);
 
-        // Record the voucher usage if a voucher was applied
         if ($voucher) {
-            VoucherUsage::create([
-                'user_id' => $user->id,
-                'voucher_id' => $voucher->id,
-            ]);
+            VoucherUsage::create(['user_id' => $user->id, 'voucher_id' => $voucher->id]);
         }
 
-        // Transaction parameters with the discounted total price
+        $transactionOrderId = 'ORDER-' . $order->id . '-' . time();
         $params = [
             'transaction_details' => [
-                'order_id' => $order->id,
+                'order_id' => $transactionOrderId,
                 'gross_amount' => $order->total_price,
             ],
             'customer_details' => [
@@ -140,11 +107,13 @@ class OrderController extends Controller
             ],
         ];
 
-        // Get Snap Token from Midtrans
-        $snapToken = \Midtrans\Snap::getSnapToken($params);
+        if (!$order->snap_token) {
+            $snapToken = \Midtrans\Snap::getSnapToken($params);
+            $order->update(['snap_token' => $snapToken]);
+        } else {
+            $snapToken = $order->snap_token;
+        }
 
-
-        // Create Snap URL for viewing
         $snapViewUrl = route('snap.view', ['orderId' => $order->id]);
 
         return response()->json([
@@ -159,7 +128,7 @@ class OrderController extends Controller
                 'description' => $buku->description,
             ],
             'snap_token' => $snapToken,
-            'snap_view_url' => $snapViewUrl, // URL for Snap View display
+            'snap_view_url' => $snapViewUrl,
         ], 201);
     }
 
