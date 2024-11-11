@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Banner;
-use GuzzleHttp\Promise\Create;
 
 class BannerController extends Controller
 {
