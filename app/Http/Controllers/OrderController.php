@@ -376,58 +376,60 @@ class OrderController extends Controller
 
 
     public function callback(Request $request)
-    {
-        $serverKey = config('midtrans.server_key');
-        $hashed = hash('sha512', $request->order_id . $request->status_code . $request->gross_amount . $serverKey);
-    
-        // Verifikasi callback dari Midtrans
-        if ($hashed == $request->signature_key) {
-            $order = Order::find($request->order_id);
-    
-            if ($order && $request->transaction_status == 'capture') {
-                // Periksa jika order ini untuk Paket (bukan Buku)
-                if ($order->paket_id) {
-                    // Perbarui status order menjadi 'paid'
-                    $order->update(['status' => 'paid']);
-    
-                    // Ambil Paket terkait dengan order
-                    $paket = Paket::find($order->paket_id);
-    
-                    // Pemetaan paket_type ke jumlah hari
-                    $expiryDaysMapping = [
-                        '3day' => 3,
-                        '7day' => 7,
-                        '30day' => 30,
-                        'realtime' => 0, // Untuk 'realtime' akan diatur khusus di bawah
-                    ];
-    
-                    // Ambil jumlah hari dari mapping, atau null jika tidak ada
-                    $expiry_days = $expiryDaysMapping[$paket->paket_type] ?? null;
-    
-                    // Tentukan `expiry_date` berdasarkan paket_type
-                    if ($expiry_days !== null) {
-                        // Jika 'realtime', atur 45 menit dari sekarang
-                        $expiry_date = $paket->paket_type === 'realtime' 
-                            ? Carbon::now()->addMinutes(45) 
-                            : Carbon::now()->addDays($expiry_days);
-                    } else {
-                        $expiry_date = null;
-                    }
-    
-                    // Perbarui PaketTransaction terkait dengan expiry_date
-                    $paketTransaction = PaketTransaction::where('id', $order->paket_transaction_id)->first();
-                    if ($paketTransaction) {
-                        $paketTransaction->update([
-                            'status' => 'active',
-                            'expiry_date' => $expiry_date
-                        ]);
-                    }
+{
+    $serverKey = config('midtrans.server_key');
+    $hashed = hash('sha512', $request->order_id . $request->status_code . $request->gross_amount . $serverKey);
+
+    // Verify Midtrans callback
+    if ($hashed == $request->signature_key) {
+        $order = Order::find($request->order_id);
+
+        if ($order && $request->transaction_status == 'capture') {
+            // Check if this order is for a Paket (not a Buku)
+            if ($order->paket_id) {
+                // Update the order status to 'paid'
+                $order->update(['status' => 'paid']);
+
+                // Retrieve the Paket associated with the order
+                $paket = Paket::find($order->paket_id);
+                $expiry_date = null;
+
+                // Set expiry_date based on paket_type
+                switch ($paket->paket_type) {
+                    case '3day':
+                        $expiry_date = Carbon::now()->addDays(3);
+                        break;
+                    case '7day':
+                        $expiry_date = Carbon::now()->addDays(7);
+                        break;
+                    case '30day':
+                        $expiry_date = Carbon::now()->addDays(30);
+                        break;
+                    case 'realtime':
+                        $expiry_date = Carbon::now()->addMinutes(45);
+                        break;
                 }
-                // Jika order untuk Buku, tidak mengubah status atau expiry date
+
+                // Update the associated PaketTransaction status
+                $paketTransaction = PaketTransaction::where('id', $order->paket_transaction_id)->first();
+                if ($paketTransaction) {
+                    // First, update the status
+                    $paketTransaction->update([
+                        'status' => 'active',
+                    ]);
+
+                    // Then, create a new entry or set the expiry_date
+                    $paketTransaction->updateOrCreate(
+                        ['id' => $paketTransaction->id],
+                        ['expiry_date' => $expiry_date]
+                    );
+                }
             }
+            // If it's a Buku order, skip changing the status or expiry date
         }
     }
-    
+}
+
 
     public function invoice($id)
     {
