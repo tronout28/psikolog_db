@@ -16,6 +16,7 @@ class Order extends Model
         'voucher_id',
         'voucher_usage_id',
         'name',
+        'paket_type',
         'detailed_address',
         'postal_code',
         'note',

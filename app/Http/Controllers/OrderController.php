@@ -259,6 +259,7 @@ class OrderController extends Controller
             'postal_code' => $selectedAddress->postal_code,
             'note' => $selectedAddress->note,
             'phone_number' => $selectedAddress->phone_number,
+            'paket_type' => $paket->paket_type,
             'status' => 'unpaid',
             'total_price' => $totalPrice,
         ]);
@@ -287,6 +288,7 @@ class OrderController extends Controller
                 'phone' => $selectedAddress->phone_number,
                 'postal_code' => $selectedAddress->postal_code,
                 'note' => $selectedAddress->note,
+                'paket_type' => $order->paket_type,
                 'address' => $selectedAddress->address,
             ],
         ];
@@ -362,6 +364,7 @@ class OrderController extends Controller
                 'phone' => $selectedAddress->phone_number,
                 'address' => $selectedAddress->address,
                 'postal_code' => $selectedAddress->postal_code,
+                'paket_type' => $order->paket_type,
                 'note' => $selectedAddress->note,
             ],
         ];
@@ -376,60 +379,53 @@ class OrderController extends Controller
 
 
     public function callback(Request $request)
-{
-    $serverKey = config('midtrans.server_key');
-    $hashed = hash('sha512', $request->order_id . $request->status_code . $request->gross_amount . $serverKey);
+    {
+        $serverKey = config('midtrans.server_key');
+        $hashed = hash('sha512', $request->order_id . $request->status_code . $request->gross_amount . $serverKey);
 
-    // Verify Midtrans callback
-    if ($hashed == $request->signature_key) {
-        $order = Order::find($request->order_id);
+        // Verify Midtrans callback
+        if ($hashed == $request->signature_key) {
+            $order = Order::find($request->order_id);
 
-        if ($order && $request->transaction_status == 'capture') {
-            // Check if this order is for a Paket (not a Buku)
-            if ($order->paket_id) {
-                // Update the order status to 'paid'
-                $order->update(['status' => 'paid']);
+            if ($order && $request->transaction_status == 'capture') {
+                // Check if this order is for a Paket (not a Buku)
+                if ($order->paket_id) {
+                    // Update the order status to 'paid'
+                    $order->update(['status' => 'paid']);
 
-                // Retrieve the Paket associated with the order
-                $paket = Paket::find($order->paket_id);
-                $expiry_date = null;
+                    // Retrieve the Paket associated with the order
+                    $paket = Paket::find($order->paket_type);
+                    $expiry_date = null;
 
-                // Set expiry_date based on paket_type
-                switch ($paket->paket_type) {
-                    case '3day':
-                        $expiry_date = Carbon::now()->addDays(3);
-                        break;
-                    case '7day':
-                        $expiry_date = Carbon::now()->addDays(7);
-                        break;
-                    case '30day':
-                        $expiry_date = Carbon::now()->addDays(30);
-                        break;
-                    case 'realtime':
-                        $expiry_date = Carbon::now()->addMinutes(45);
-                        break;
+                    // Set expiry_date based on paket_type
+                    switch ($paket->paket_type) {
+                        case '3day':
+                            $expiry_date = Carbon::now()->addDays(3);
+                            break;
+                        case '7day':
+                            $expiry_date = Carbon::now()->addDays(7);
+                            break;
+                        case '30day':
+                            $expiry_date = Carbon::now()->addDays(30);
+                            break;
+                        case 'realtime':
+                            $expiry_date = Carbon::now()->addMinutes(45);
+                            break;
+                    }
+
+                    // Update the associated PaketTransaction with expiry_date
+                    $paketTransaction = PaketTransaction::where('id', $order->paket_transaction_id)->first();
+                    if ($paketTransaction) {
+                        $paketTransaction->update([
+                            'status' => 'active',
+                            'expiry_date' => $expiry_date
+                        ]);
+                    }
                 }
-
-                // Update the associated PaketTransaction status
-                $paketTransaction = PaketTransaction::where('id', $order->paket_transaction_id)->first();
-                if ($paketTransaction) {
-                    // First, update the status
-                    $paketTransaction->update([
-                        'status' => 'active',
-                    ]);
-
-                    // Then, create a new entry or set the expiry_date
-                    $paketTransaction->updateOrCreate(
-                        ['id' => $paketTransaction->id],
-                        ['expiry_date' => $expiry_date]
-                    );
-                }
+                // If it's a Buku order, skip changing the status or expiry date
             }
-            // If it's a Buku order, skip changing the status or expiry date
         }
     }
-}
-
 
     public function invoice($id)
     {
