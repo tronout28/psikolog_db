@@ -59,6 +59,7 @@ class UserController extends Controller
         //     }
 
         //     $user->profile_picture = $imageName;
+        //     $user->save();
         // }
 
         // Update informasi pengguna lainnya
