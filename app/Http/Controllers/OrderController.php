@@ -388,26 +388,32 @@ class OrderController extends Controller
                     // Update the order status to 'paid'
                     $order->update(['status' => 'paid']);
 
-                    // Calculate the new expiry date based on paket type
+                    // Retrieve the Paket associated with the order
                     $paket = Paket::find($order->paket_id);
                     $expiry_date = null;
 
-                    if ($paket->paket_type === '3day') {
-                        $expiry_date = Carbon::now()->addDays(3);
-                    } elseif ($paket->paket_type === '7day') {
-                        $expiry_date = Carbon::now()->addDays(7);
-                    } elseif ($paket->paket_type === '30day') {
-                        $expiry_date = Carbon::now()->addDays(30);
-                    } elseif ($paket->paket_type === 'realtime') {
-                        $expiry_date = Carbon::now()->addMinutes(45);
+                    // Set expiry_date based on paket_type
+                    switch ($paket->paket_type) {
+                        case '3day':
+                            $expiry_date = Carbon::now()->addDays(3);
+                            break;
+                        case '7day':
+                            $expiry_date = Carbon::now()->addDays(7);
+                            break;
+                        case '30day':
+                            $expiry_date = Carbon::now()->addDays(30);
+                            break;
+                        case 'realtime':
+                            $expiry_date = Carbon::now()->addMinutes(45);
+                            break;
                     }
 
-                    // Update the associated PaketTransaction
+                    // Update the associated PaketTransaction with expiry_date
                     $paketTransaction = PaketTransaction::where('id', $order->paket_transaction_id)->first();
                     if ($paketTransaction) {
                         $paketTransaction->update([
                             'status' => 'active',
-                            'expiry_date' => $expiry_date,
+                            'expiry_date' => $expiry_date
                         ]);
                     }
                 }
