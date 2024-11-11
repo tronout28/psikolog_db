@@ -15,6 +15,7 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PaketController;
 use App\Http\Controllers\VoucherController;
 use App\Http\Controllers\RatingController;
+use App\Http\Controllers\ArtikelController;
 
 Route::group(['prefix' => '/auth'], function () {
     Route::post('/register', [AuthController::class, 'register']);
@@ -95,11 +96,18 @@ Route::group(['prefix' => '/voucher',], function () {
 
 Route::group(['prefix' => '/banner'], function () {
     Route::post('/add-banner', [BannerController::class, 'inputBanner']);
-    Route::delete('/delete', [BannerController::class, 'deleteBanner']);
     Route::get('/all-banner', [BannerController::class, 'index']);
+    Route::delete('/delete-banner/{id}', [BannerController::class, 'deleteBanner']);
     Route::get('/show-banner/{id}', [BannerController::class, 'detailBanner']);
 });
 
+Route::prefix('/artikel')->group(function () {
+    Route::get('/all-artikel', [ArtikelController::class, 'index']);
+    Route::get('/show-artikel/{id}', [ArtikelController::class, 'show']);
+    Route::post('/add-artikel', [ArtikelController::class, 'store']);
+    Route::put('/update-artikel/{id}', [ArtikelController::class, 'update']);
+    Route::delete('/delete-artikel/{id}', [ArtikelController::class, 'destroy']);
+});
 
 Route::group(['prefix' => '/rating'], function () {
     Route::post('/rate-user', [RatingController::class, 'store']);
