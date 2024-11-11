@@ -26,19 +26,24 @@ class BannerController extends Controller
             $imageName = time() . '.' . $image->extension();
             $image->move(public_path('images-banner'), $imageName);
 
+            // Only try to delete if the banner has a previous image
             if ($banner->image && file_exists(public_path('images-banner/' . $banner->image))) {
                 unlink(public_path('images-banner/' . $banner->image));
             }
 
+            // Save only the image file name in the database
             $banner->image = $imageName;
+            $banner->image = url('images-banner/' . $banner->image);
             $banner->save();
         }
+
 
         return response()->json([
             'message' => 'Banner created!',
             'data' => $banner
         ]);
     }
+
 
     public function index()
     {
@@ -50,13 +55,21 @@ class BannerController extends Controller
         ]);
     }
 
-    public function deleteBanner(Request $request)
+   public function deleteBanner($id)
     {
-        $request->validate([
-            'id' => 'required|exists:banners,id',
-        ]);
+        $banner = Banner::find($id);
 
-        $banner = Banner::find($request->id);
+        if (!$banner) {
+            return response()->json([
+                'message' => 'Banner not found!',
+            ], 404);
+        }
+
+        // Only try to delete if the banner has an image
+        if ($banner->image && file_exists(public_path('images-banner/' . $banner->image))) {
+            unlink(public_path('images-banner/' . $banner->image));
+        }
+
         $banner->delete();
 
         return response()->json([
@@ -64,16 +77,18 @@ class BannerController extends Controller
         ]);
     }
 
-    public function detailBanner(Request $request)
+    public function detailBanner($id)
     {
-        $request->validate([
-            'id' => 'required|exists:banners,id',
-        ]);
+        $banner = Banner::find($id);
 
-        $banner = Banner::find($request->id);
+        if (!$banner) {
+            return response()->json([
+                'message' => 'Banner not found!',
+            ], 404);
+        }
 
         return response()->json([
-            'message' => 'Detail banner',
+            'message' => 'Banner found!',
             'data' => $banner
         ]);
     }

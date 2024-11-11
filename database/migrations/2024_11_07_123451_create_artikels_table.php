@@ -14,8 +14,10 @@ return new class extends Migration
         Schema::create('artikels', function (Blueprint $table) {
             $table->id();
             $table->string('title');
-            $table->string('image'); 
+            $table->string('subtitle');
+            $table->string('image')->nullable(); 
             $table->text('content');
+            $table->string('url')->nullable();
 
             $table->timestamps();
         });
