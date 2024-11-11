@@ -276,7 +276,6 @@ class OrderController extends Controller
         $paketOwner = $paket->user;
 
         $order_id = 'ORDER-' . time() . '-' . uniqid();
-
         $params = [
             'transaction_details' => [
                 'order_id' => $order_id,
@@ -326,7 +325,7 @@ class OrderController extends Controller
 
 
 
-    public function snapView($orderId)
+    public function snapView(Request $request, $orderId)
     {
         // Find the order by ID
         $order = Order::find($orderId);
@@ -352,10 +351,12 @@ class OrderController extends Controller
             abort(404, "Price not found for this order");
         }
 
+        $order_id = 'ORDER-' . $request->user()->id . '-' . time();
+
         // Transaction parameters
         $params = [
             'transaction_details' => [
-                'order_id' => $order->id,
+                'order_id' => $order_id,
                 'gross_amount' => $order->total_price,
             ],
             'customer_details' => [
