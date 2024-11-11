@@ -31,6 +31,7 @@ class BannerController extends Controller
             }
 
             $banner->image = $imageName;
+            $banner->save();
         }
 
         return response()->json([

@@ -106,10 +106,10 @@ class BukuController extends Controller
         $buku->title = $request->title ?? $buku->title;
         $buku->description = $request->description ?? $buku->description;
         $buku->price = $request->price ?? $buku->price;
+        $buku->image = url('images-book/' . $buku->image);
 
         $buku->save();
 
-        $buku->image = url('images-book/' . $buku->image);
 
         return response()->json([
             'data' => $buku,
@@ -134,9 +134,9 @@ class BukuController extends Controller
         }
 
         $buku->is_available = $request->is_available;
+        $buku->image = url('images-book/' . $buku->image);
         $buku->save();
 
-        $buku->image = url('images-book/' . $buku->image);
 
         return response()->json([
             'data' => $buku,
