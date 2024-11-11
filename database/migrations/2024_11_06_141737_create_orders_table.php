@@ -26,7 +26,6 @@ return new class extends Migration
             $table->enum('status',['paid','unpaid'])->default('unpaid');
             $table->string('postal_code')->nullable();
             $table->string('note')->nullable();
-            $table->enum('paket_type', ['3day', '7day', '30day', 'realtime']);
             $table->timestamps();
 
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');

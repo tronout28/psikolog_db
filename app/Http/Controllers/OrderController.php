@@ -165,163 +165,162 @@ class OrderController extends Controller
 
 
     public function checkoutPaket(Request $request)
-    {
-        $user = auth()->user();
-        if (!$user) {
-            return response()->json([
-                'success' => false,
-                'message' => 'User not authenticated',
-            ], 401);
-        }
+{
+    $user = auth()->user();
+    if (!$user) {
+        return response()->json([
+            'success' => false,
+            'message' => 'User not authenticated',
+        ], 401);
+    }
 
-        $selectedAddress = AlamatUser::where('user_id', $user->id)
-            ->where('is_selected', true)
+    $selectedAddress = AlamatUser::where('user_id', $user->id)
+        ->where('is_selected', true)
+        ->first();
+
+    if (!$selectedAddress) {
+        return response()->json([
+            'success' => false,
+            'message' => 'No address selected',
+        ], 400);
+    }
+
+    $request->validate([
+        'paket_id' => 'required|exists:pakets,id',
+        'voucher_code' => 'nullable|string|exists:vouchers,code',
+    ]);
+
+    // Mengambil paket dan user yang memiliki paket
+    $paket = Paket::with('user')->find($request->paket_id);
+    if (!$paket) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Paket not found for this order',
+        ], 404);
+    }
+
+    $totalPrice = $paket->price;
+
+    // Apply voucher if provided
+    $voucher = null;
+    if ($request->voucher_code) {
+        $voucher = Voucher::where('code', $request->voucher_code)
+            ->where('is_active', true)
+            ->where(function ($query) {
+                $query->whereNull('expiry_date')
+                    ->orWhere('expiry_date', '>', Carbon::now());
+            })
             ->first();
 
-        if (!$selectedAddress) {
+        if (!$voucher) {
             return response()->json([
                 'success' => false,
-                'message' => 'No address selected',
+                'message' => 'Invalid or expired voucher code.',
             ], 400);
         }
 
-        $request->validate([
-            'paket_id' => 'required|exists:pakets,id',
-            'voucher_code' => 'nullable|string|exists:vouchers,code',
-        ]);
+        // Check if the user has already used this voucher
+        $hasUsedVoucher = VoucherUsage::where('user_id', $user->id)
+            ->where('voucher_id', $voucher->id)
+            ->exists();
 
-        // Mengambil paket dan user yang memiliki paket
-        $paket = Paket::with('user')->find($request->paket_id);
-        if (!$paket) {
+        if ($hasUsedVoucher) {
             return response()->json([
                 'success' => false,
-                'message' => 'Paket not found for this order',
-            ], 404);
+                'message' => 'You have already used this voucher.',
+            ], 400);
         }
 
-        $totalPrice = $paket->price;
-
-        // Apply voucher if provided
-        $voucher = null;
-        if ($request->voucher_code) {
-            $voucher = Voucher::where('code', $request->voucher_code)
-                ->where('is_active', true)
-                ->where(function ($query) {
-                    $query->whereNull('expiry_date')
-                        ->orWhere('expiry_date', '>', Carbon::now());
-                })
-                ->first();
-
-            if (!$voucher) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Invalid or expired voucher code.',
-                ], 400);
-            }
-
-            // Check if the user has already used this voucher
-            $hasUsedVoucher = VoucherUsage::where('user_id', $user->id)
-                ->where('voucher_id', $voucher->id)
-                ->exists();
-
-            if ($hasUsedVoucher) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'You have already used this voucher.',
-                ], 400);
-            }
-
-            // Apply discount based on voucher type
-            if ($voucher->discount_amount) {
-                $totalPrice -= min($voucher->discount_amount, $totalPrice);
-            } elseif ($voucher->discount_percentage) {
-                $totalPrice -= ($voucher->discount_percentage / 100) * $totalPrice;
-            }
-
-            // Ensure total price doesn't go below zero
-            $totalPrice = max(0, $totalPrice);
+        // Apply discount based on voucher type
+        if ($voucher->discount_amount) {
+            $totalPrice -= min($voucher->discount_amount, $totalPrice);
+        } elseif ($voucher->discount_percentage) {
+            $totalPrice -= ($voucher->discount_percentage / 100) * $totalPrice;
         }
 
-        // Create PaketTransaction and Order
-        $paketTransaction = PaketTransaction::create([
+        // Ensure total price doesn't go below zero
+        $totalPrice = max(0, $totalPrice);
+    }
+
+    // Create PaketTransaction and Order
+    $paketTransaction = PaketTransaction::create([
+        'user_id' => $user->id,
+        'paket_id' => $paket->id,
+        'status' => 'inactive',
+    ]);
+
+    $order = Order::create([
+        'user_id' => $user->id,
+        'paket_id' => $paket->id,
+        'paket_transaction_id' => $paketTransaction->id,
+        'voucher_id' => $voucher ? $voucher->id : null,
+        'name' => $selectedAddress->name,
+        'detailed_address' => $selectedAddress->address,
+        'postal_code' => $selectedAddress->postal_code,
+        'note' => $selectedAddress->note,
+        'phone_number' => $selectedAddress->phone_number,
+        'status' => 'unpaid',
+        'total_price' => $totalPrice,
+    ]);
+
+    // Record the voucher usage if a voucher was applied
+    if ($voucher) {
+        VoucherUsage::create([
             'user_id' => $user->id,
-            'paket_id' => $paket->id,
-            'status' => 'inactive',
+            'voucher_id' => $voucher->id,
         ]);
+    }
 
-        $order = Order::create([
-            'user_id' => $user->id,
-            'paket_id' => $paket->id,
-            'paket_transaction_id' => $paketTransaction->id,
-            'voucher_id' => $voucher ? $voucher->id : null,
+    // Ambil data user pemilik paket
+    $paketOwner = $paket->user;
+
+    $order_id = 'ORDER-' . time() . '-' . uniqid();
+
+    $params = [
+        'transaction_details' => [
+            'order_id' => $order_id,
+            'gross_amount' => $order->total_price,
+        ],
+        'customer_details' => [
             'name' => $selectedAddress->name,
-            'detailed_address' => $selectedAddress->address,
+            'email' => $user->email,
+            'phone' => $selectedAddress->phone_number,
             'postal_code' => $selectedAddress->postal_code,
             'note' => $selectedAddress->note,
-            'phone_number' => $selectedAddress->phone_number,
+            'address' => $selectedAddress->address,
+        ],
+    ];
+
+    $snapToken = \Midtrans\Snap::getSnapToken($params);
+    $snapViewUrl = route('snap.view', ['orderId' => $order->id]);
+
+    // Menyusun respons dengan paket dan pemiliknya di satu bagian
+    return response()->json([
+        'success' => true,
+        'message' => 'Paket order created successfully',
+        'data' => $order,
+        'paket_info' => [
+            'paket_id' => $paket->id,
+            'title' => $paket->title,
+            'price' => $paket->price,
             'paket_type' => $paket->paket_type,
-            'status' => 'unpaid',
-            'total_price' => $totalPrice,
-        ]);
-
-        // Record the voucher usage if a voucher was applied
-        if ($voucher) {
-            VoucherUsage::create([
-                'user_id' => $user->id,
-                'voucher_id' => $voucher->id,
-            ]);
-        }
-
-        // Ambil data user pemilik paket
-        $paketOwner = $paket->user;
-
-        $order_id = 'ORDER-' . time() . '-' . uniqid();
-
-        $params = [
-            'transaction_details' => [
-                'order_id' => $order_id,
-                'gross_amount' => $order->total_price,
+            'owner' => [
+                'owner_id' => $paketOwner->id,
+                'owner_name' => $paketOwner->name,
+                'owner_email' => $paketOwner->email,
+                'owner_age' => $paketOwner->ages,
+                'owner_phone' => $paketOwner->phone_number,
+                'owner_address' => $paketOwner->address,
+                'owner_profile_picture' => $paketOwner->profile_picture,
+                'owner_str_number' => $paketOwner->str_number,
+                'owner_school' => $paketOwner->school,
+                'owner_experience' => $paketOwner->experience,
             ],
-            'customer_details' => [
-                'name' => $selectedAddress->name,
-                'email' => $user->email,
-                'phone' => $selectedAddress->phone_number,
-                'postal_code' => $selectedAddress->postal_code,
-                'note' => $selectedAddress->note,
-                'address' => $selectedAddress->address,
-            ],
-        ];
-
-        $snapToken = \Midtrans\Snap::getSnapToken($params);
-        $snapViewUrl = route('snap.view', ['orderId' => $order->id]);
-
-        // Menyusun respons dengan paket dan pemiliknya di satu bagian
-        return response()->json([
-            'success' => true,
-            'message' => 'Paket order created successfully',
-            'data' => $order,
-            'paket_info' => [
-                'paket_id' => $paket->id,
-                'title' => $paket->title,
-                'price' => $paket->price,
-                'paket_type' => $paket->paket_type,
-                'owner' => [
-                    'owner_id' => $paketOwner->id,
-                    'owner_name' => $paketOwner->name,
-                    'owner_email' => $paketOwner->email,
-                    'owner_age' => $paketOwner->ages,
-                    'owner_phone' => $paketOwner->phone_number,
-                    'owner_address' => $paketOwner->address,
-                    'owner_profile_picture' => $paketOwner->profile_picture,
-                    'owner_str_number' => $paketOwner->str_number,
-                    'owner_school' => $paketOwner->school,
-                    'owner_experience' => $paketOwner->experience,
-                ],
-            ],
-            'snap_token' => $snapToken,
-            'snap_view_url' => $snapViewUrl,
-        ], 201);
-    }
+        ],
+        'snap_token' => $snapToken,
+        'snap_view_url' => $snapViewUrl,
+    ], 201);
+}
 
 
 
@@ -392,7 +391,7 @@ class OrderController extends Controller
                     $order->update(['status' => 'paid']);
 
                     // Retrieve the Paket associated with the order
-                    $paket = Paket::find($order->paket_type);
+                    $paket = Paket::find($order->paket_id);
                     $expiry_date = null;
 
                     // Set expiry_date based on paket_type
