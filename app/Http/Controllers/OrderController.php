@@ -392,36 +392,19 @@ class OrderController extends Controller
 
                     // Retrieve the Paket associated with the order
                     $paket = Paket::find($order->paket_id);
-                    $expiry_date = null;
 
-                    // Set expiry_date based on paket_type
-                    switch ($paket->paket_type) {
-                        case '3day':
-                            $expiry_date = Carbon::now()->addDays(3);
-                            break;
-                        case '7day':
-                            $expiry_date = Carbon::now()->addDays(7);
-                            break;
-                        case '30day':
-                            $expiry_date = Carbon::now()->addDays(30);
-                            break;
-                        case 'realtime':
-                            $expiry_date = Carbon::now()->addMinutes(45);
-                            break;
-                    }
-
-                    dd($paket->paket_type);  // Tambahkan ini untuk melihat nilai paket_type
-
+                    $expiry_date = $paket->getFormattedExpiryDate();
+                    
+                    // Update the associated PaketTransaction with expiry_date
                     $paketTransaction = PaketTransaction::where('id', $order->paket_transaction_id)->first();
-                    if ($paketTransaction) {
-                        $paketTransaction->save([
+                    if ($expiry_date) {
+                        $paketTransaction->update([
                             'status' => 'active',
                             'expiry_date' => $expiry_date
                         ]);
-                        dd($paketTransaction->fresh()); 
-                        dd($expiry_date);
                     }
                 }
+                // If it's a Buku order, skip changing the status or expiry date
             }
         }
     }
