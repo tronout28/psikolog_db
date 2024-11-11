@@ -24,6 +24,7 @@ class UserController extends Controller
         $users = User::where('role', 'dokter')
         ->where('id', '!=', auth()->user()->id)
         ->get();
+        
 
         return response()->json($users);
     }

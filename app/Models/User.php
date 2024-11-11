@@ -93,4 +93,17 @@ class User extends Authenticatable
     {
         return $this->hasMany(Paket::class, 'user_id');
     }
+
+    public function getAverageRatingAttribute()
+    {
+        return $this->ratings()->avg('rating') ?? 0;
+    }
+
+    /**
+     * Relationship to the ratings received by the user.
+     */
+    public function ratings()
+    {
+        return $this->hasMany(Rating::class);
+    }
 }
