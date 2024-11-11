@@ -256,6 +256,7 @@ class OrderController extends Controller
             'postal_code' => $selectedAddress->postal_code,
             'note' => $selectedAddress->note,
             'phone_number' => $selectedAddress->phone_number,
+            'paket_type' => $paket->paket_type,
             'status' => 'unpaid',
             'total_price' => $totalPrice,
         ]);
@@ -379,7 +380,7 @@ class OrderController extends Controller
                     $order->update(['status' => 'paid']);
 
                     // Retrieve the Paket associated with the order
-                    $paket = Paket::find($order->paket_id);
+                    $paket = Paket::find($order->paket_type);
                     $expiry_date = null;
 
                     // Set expiry_date based on paket_type
