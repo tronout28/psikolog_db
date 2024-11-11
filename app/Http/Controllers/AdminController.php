@@ -136,8 +136,6 @@ class AdminController extends Controller
             ], 404);
         }
 
-        $user->profile_picture = url('images-dokter/' . $user->profile_picture);
-
         return response()->json([
             'data' => $user,
             'status' => 'success',
