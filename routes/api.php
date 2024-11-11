@@ -14,6 +14,7 @@ use App\Http\Controllers\BukuController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PaketController;
 use App\Http\Controllers\VoucherController;
+use App\Http\Controllers\RatingController;
 
 Route::group(['prefix' => '/auth'], function () {
     Route::post('/register', [AuthController::class, 'register']);
@@ -92,11 +93,16 @@ Route::group(['prefix' => '/voucher',], function () {
     Route::get('/all-voucher', [VoucherController::class, 'index']);
 });
 
-Route::group(['prefix' => '/banner',], function () {
+Route::group(['prefix' => '/banner'], function () {
     Route::post('/add-banner', [BannerController::class, 'inputBanner']);
     Route::delete('/delete', [BannerController::class, 'deleteBanner']);
     Route::get('/all-banner', [BannerController::class, 'index']);
     Route::get('/show-banner/{id}', [BannerController::class, 'detailBanner']);
+});
+
+
+Route::group(['prefix' => '/rating'], function () {
+    Route::post('/rate-user', [RatingController::class, 'store']);
 });
 
 Route::group(['prefix' => '/alamat','middleware' => ['auth:sanctum']], function () {

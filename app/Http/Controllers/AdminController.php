@@ -128,6 +128,7 @@ class AdminController extends Controller
         $user = User::find($id);
 
         if (!$user) {
+            
             return response()->json([
                 'status' => 'error',
                 'message' => 'User not found',
