@@ -53,6 +53,7 @@ class AdminController extends Controller
 
             // Simpan nama file gambar baru di database
             $user->profile_picture = $imageName;
+            $user->save();
         }
          
         $user->profile_picture = url('images-dokter/' . $user->profile_picture);
