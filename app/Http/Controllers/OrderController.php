@@ -274,9 +274,11 @@ class OrderController extends Controller
     // Ambil data user pemilik paket
     $paketOwner = $paket->user;
 
+    $order_id = 'ORDER-' . time() . '-' . uniqid();
+
     $params = [
         'transaction_details' => [
-            'order_id' => $order->id,
+            'order_id' => $order_id,
             'gross_amount' => $order->total_price,
         ],
         'customer_details' => [
