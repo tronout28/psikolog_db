@@ -276,6 +276,7 @@ class OrderController extends Controller
         $paketOwner = $paket->user;
 
         $order_id = 'ORDER-' . time() . '-' . uniqid();
+
         $params = [
             'transaction_details' => [
                 'order_id' => $order_id,
@@ -287,7 +288,6 @@ class OrderController extends Controller
                 'phone' => $selectedAddress->phone_number,
                 'postal_code' => $selectedAddress->postal_code,
                 'note' => $selectedAddress->note,
-                'paket_type' => $order->paket_type,
                 'address' => $selectedAddress->address,
             ],
         ];
@@ -363,7 +363,6 @@ class OrderController extends Controller
                 'phone' => $selectedAddress->phone_number,
                 'address' => $selectedAddress->address,
                 'postal_code' => $selectedAddress->postal_code,
-                'paket_type' => $order->paket_type,
                 'note' => $selectedAddress->note,
             ],
         ];
