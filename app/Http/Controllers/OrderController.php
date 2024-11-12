@@ -334,51 +334,55 @@ class OrderController extends Controller
 
     public function callback(Request $request)
     {
+        // Validate required parameters
+        if (!$request->has(['order_id', 'status_code', 'gross_amount', 'signature_key', 'transaction_status'])) {
+            return response()->json(['error' => 'Missing required parameters'], 400);
+        }
+    
+        // Midtrans server key from configuration
         $serverKey = config('midtrans.server_key');
         $hashed = hash('sha512', $request->order_id . $request->status_code . $request->gross_amount . $serverKey);
-
-        // Verify Midtrans callback
-        if ($hashed == $request->signature_key) {
-            $order = Order::find($request->order_id);
-
-            if ($order && $request->transaction_status == 'capture') {
-                // Check if this order is for a Paket (not a Buku)
-                if ($order->paket_id) {
-                    // Update the order status to 'paid'
-                    $order->update(['status' => 'paid']);
-
-                    // Retrieve the Paket associated with the order
-                    $paket = Paket::find($order->paket_id);
-                    $expiry_date = null;
-
-                    // Set expiry_date based on paket_type
-                    switch ($paket->paket_type) {
-                        case '3day':
-                            $expiry_date = Carbon::now()->addDays(3);
-                            break;
-                        case '7day':
-                            $expiry_date = Carbon::now()->addDays(7);
-                            break;
-                        case '30day':
-                            $expiry_date = Carbon::now()->addDays(30);
-                            break;
-                        case 'realtime':
-                            $expiry_date = Carbon::now()->addMinutes(45);
-                            break;
-                    }
-
-                    // Update the associated PaketTransaction with expiry_date
-                    $paketTransaction = PaketTransaction::where('id', $order->paket_transaction_id)->first();
-                    if ($paketTransaction) {
-                        $paketTransaction->update([
-                            'status' => 'active',
-                            'expiry_date' => $expiry_date
-                        ]);
-                    }
-                }
-                // If it's a Buku order, skip changing the status or expiry date
+    
+        // Check if signature key matches for security
+        if ($hashed !== $request->signature_key) {
+            return response()->json(['error' => 'Invalid signature key'], 403);
+        }
+    
+        // Retrieve the order
+        $order = Order::find($request->order_id);
+        if (!$order || $request->transaction_status !== 'capture') {
+            return response()->json(['error' => 'Order not found or transaction not captured'], 404);
+        }
+    
+        // Update order status
+        $order->update(['status' => 'paid']);
+    
+        // Check if the order has a package (paket_id)
+        if ($order->paket_id) {
+            $paket = Paket::find($order->paket_id);
+            if (!$paket) {
+                return response()->json(['error' => 'Paket not found'], 404);
+            }
+    
+            // Determine the expiry date based on paket type
+            $expiry_date = match ($paket->paket_type) {
+                '3day' => Carbon::now()->addDays(3),
+                '7day' => Carbon::now()->addDays(7),
+                '30day' => Carbon::now()->addDays(30),
+                'realtime' => Carbon::now()->addMinutes(45),
+                default => null,
+            };
+    
+            // Update the PaketTransaction status and expiry date if it exists
+            $paketTransaction = PaketTransaction::find($order->paket_transaction_id);
+            if ($paketTransaction) {
+                $paketTransaction->update([
+                    'status' => 'active',
+                    'expiry_date' => $expiry_date
+                ]);
             }
         }
+        return response()->json(['success' => 'Order and package updated successfully'], 200);
     }
 
     public function invoice($id)
