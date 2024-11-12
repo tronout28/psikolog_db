@@ -338,33 +338,35 @@ class OrderController extends Controller
         if (!$request->has(['order_id', 'status_code', 'gross_amount', 'signature_key', 'transaction_status'])) {
             return response()->json(['error' => 'Missing required parameters'], 400);
         }
-    
+
         // Midtrans server key from configuration
         $serverKey = config('midtrans.server_key');
         $hashed = hash('sha512', $request->order_id . $request->status_code . $request->gross_amount . $serverKey);
-    
+
         // Check if signature key matches for security
         if ($hashed !== $request->signature_key) {
             return response()->json(['error' => 'Invalid signature key'], 403);
         }
-    
-        // Retrieve the order
-        $order = Order::find($request->order_id);
-        if (!$order || $request->transaction_status !== 'capture') {
+
+        // Extract Order ID
+        $orderId = str_replace('ORDER-', '', $request->order_id);
+        $order = Order::find($orderId);
+
+        if (!$order || !in_array($request->transaction_status, ['capture', 'settlement'])) {
             return response()->json(['error' => 'Order not found or transaction not captured'], 404);
         }
-    
+
         // Update order status
         $order->update(['status' => 'paid']);
-    
-        // Check if the order has a package (paket_id)
+
         if ($order->paket_id) {
+            // Handle Paket logic
             $paket = Paket::find($order->paket_id);
             if (!$paket) {
                 return response()->json(['error' => 'Paket not found'], 404);
             }
-    
-            // Determine the expiry date based on paket type
+
+            // Determine expiry date
             $expiry_date = match ($paket->paket_type) {
                 '3day' => Carbon::now()->addDays(3),
                 '7day' => Carbon::now()->addDays(7),
@@ -372,8 +374,7 @@ class OrderController extends Controller
                 'realtime' => Carbon::now()->addMinutes(45),
                 default => null,
             };
-    
-            // Update the PaketTransaction status and expiry date if it exists
+
             $paketTransaction = PaketTransaction::find($order->paket_transaction_id);
             if ($paketTransaction) {
                 $paketTransaction->update([
@@ -382,8 +383,10 @@ class OrderController extends Controller
                 ]);
             }
         }
+
         return response()->json(['success' => 'Order and package updated successfully'], 200);
     }
+
 
     public function invoice($id)
     {

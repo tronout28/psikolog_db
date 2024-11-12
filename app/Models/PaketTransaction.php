@@ -12,7 +12,7 @@ class PaketTransaction extends Model
         'user_id',
         'paket_id',
         'status',
-        'expired_at',
+        'expiry_date',
     ];
 
     public function user()
