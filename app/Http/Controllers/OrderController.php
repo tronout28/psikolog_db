@@ -368,12 +368,13 @@ class OrderController extends Controller
 
             // Determine expiry date
             $expiry_date = match ($paket->paket_type) {
-                '3day' => Carbon::now()->addDays(3),
-                '7day' => Carbon::now()->addDays(7),
-                '30day' => Carbon::now()->addDays(30),
-                'realtime' => Carbon::now()->addMinutes(45),
+                '3day' => Carbon::now('Asia/Jakarta')->addDays(3),
+                '7day' => Carbon::now('Asia/Jakarta')->addDays(7),
+                '30day' => Carbon::now('Asia/Jakarta')->addDays(30),
+                'realtime' => Carbon::now('Asia/Jakarta')->addMinutes(45),
                 default => null,
             };
+            
 
             $paketTransaction = PaketTransaction::find($order->paket_transaction_id);
             if ($paketTransaction) {
