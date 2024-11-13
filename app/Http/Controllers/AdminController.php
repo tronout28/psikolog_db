@@ -57,7 +57,6 @@ class AdminController extends Controller
             $user->save();
         }
          
-
         return response()->json([
             'data' => $user,
             'status' => 'success',
