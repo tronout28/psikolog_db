@@ -14,11 +14,11 @@ use GuzzleHttp\Psr7\Message;
 
 class ChatMessageController extends Controller
 {
-    protected $firebaseService;
-    public function __construct(FirebaseService $firebaseService)
-    {
-        $this->firebaseService = $firebaseService;
-    }
+    // protected $firebaseService;
+    // public function __construct(FirebaseService $firebaseService)
+    // {
+    //     $this->firebaseService = $firebaseService;
+    // }
 
     public function index(GetMessageRequest $request)
     {
