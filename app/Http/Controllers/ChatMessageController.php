@@ -6,6 +6,7 @@ use App\Http\Requests\GetMessageRequest;
 use App\Http\Requests\StoreMessageRequest;
 use App\Models\Chat;
 use App\Models\PaketTransaction;
+use App\Services\FirebaseService;
 use App\Models\ChatMessage;
 use Carbon\Carbon;
 use App\Events\NewMessageSent;
@@ -13,6 +14,12 @@ use GuzzleHttp\Psr7\Message;
 
 class ChatMessageController extends Controller
 {
+    protected $firebaseService;
+    public function __construct(FirebaseService $firebaseService)
+    {
+        $this->firebaseService = $firebaseService;
+    }
+
     public function index(GetMessageRequest $request)
     {
         $data = $request->validated();
