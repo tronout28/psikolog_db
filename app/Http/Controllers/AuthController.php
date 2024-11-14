@@ -20,6 +20,7 @@ class AuthController extends Controller
             'password' => 'nullable|string|confirmed|min:6',
             'email' => 'nullable|email|unique:users',
             'role' => 'nullable|string|in:user,dokter,admin', 
+            'notification_token' => 'nullable|string',
         ]);
 
         $user = User::create([
@@ -28,6 +29,7 @@ class AuthController extends Controller
             'password' => bcrypt($request->password),
             'email' => $request->email,
             'role' => $request->role ?? 'user',
+            'notification_token' => $request->notification_token,
         ]);
 
         $token = $user->createToken('auth_token')->plainTextToken;
@@ -72,6 +74,8 @@ class AuthController extends Controller
     public function logout(Request $request)
     {
         $request->user()->tokens()->delete();
+
+        $request->user()->notification_token = null;
 
         return response()->json([
             'message' => 'Logged out successfully.',
@@ -127,11 +131,6 @@ class AuthController extends Controller
         
         $token = $user->createToken('auth_token')->plainTextToken;
     
-        // // Update the notification token if provided
-        // if ($request->filled('notification_token')) {
-        //     $user->notification_token = $request->notification_token;
-        //     $user->save();
-        // }
     
         return response()->json([
             'success' => true,
@@ -165,14 +164,14 @@ class AuthController extends Controller
                 'message' => 'The provided credentials are incorrect.',
             ], 401);
         }
-        
-        $token = $user->createToken('auth_token')->plainTextToken;
-    
         // Update the notification token if provided
         if ($request->filled('notification_token')) {
             $user->notification_token = $request->notification_token;
             $user->save();
         }
+        
+        $token = $user->createToken('auth_token')->plainTextToken;
+    
     
         return response()->json([
             'success' => true,
