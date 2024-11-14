@@ -13,6 +13,7 @@ use App\Models\Voucher;
 use App\Models\AlamatUser;
 use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 
 class OrderController extends Controller
@@ -446,7 +447,64 @@ class OrderController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $orders,
+            'data' => $orders,  
         ]);
     }
+
+    public function getMonthlyRevenue()
+    {
+        // Query to get the total revenue of paid orders grouped by month
+        $monthlyRevenue = Order::select(
+            DB::raw('YEAR(created_at) as year'),
+            DB::raw('MONTH(created_at) as month'),
+            DB::raw('SUM(total_price) as total_revenue')
+        )
+        ->where('status', 'paid') // Only include paid orders
+        ->groupBy(DB::raw('YEAR(created_at)'), DB::raw('MONTH(created_at)'))
+        ->orderBy('year', 'asc')
+        ->orderBy('month', 'asc')
+        ->get();
+
+        // Transform the result to a more readable format for charting
+        $formattedRevenue = $monthlyRevenue->map(function ($revenue) {
+            return [
+                'year' => $revenue->year,
+                'month' => Carbon::createFromDate($revenue->year, $revenue->month, 1)->format('F'), // Full month name
+                'total_revenue' => $revenue->total_revenue,
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'data' => $formattedRevenue,
+        ]);
+    }
+
+    public function getTotalPurchasedPaket()
+    {
+        // Menghitung total paket yang sudah terbeli (dengan status 'paid')
+        $totalPaket = Order::whereNotNull('paket_id')
+            ->where('status', 'paid')
+            ->count();
+
+        return response()->json([
+            'success' => true,
+            'total_paket_purchased' => $totalPaket,
+        ]);
+    }
+
+    public function getTotalPurchasedBooks()
+    {
+        // Menghitung total buku yang sudah terbeli (dengan status 'paid')
+        $totalBuku = Order::whereNotNull('buku_id')
+            ->where('status', 'paid')
+            ->count();
+
+        return response()->json([
+            'success' => true,
+            'total_books_purchased' => $totalBuku,
+        ]);
+    }
+
+
 }
