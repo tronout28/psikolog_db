@@ -8,6 +8,7 @@ use App\Models\Buku;
 use App\Models\Paket;
 use App\Models\PaketTransaction;
 use App\Models\VoucherUsage;
+use App\Services\FirebaseService;
 use App\Models\Voucher;
 use App\Models\AlamatUser;
 use Carbon\Carbon;
@@ -15,8 +16,11 @@ use Carbon\Carbon;
 
 class OrderController extends Controller
 {
-    public function __construct()
+    protected $firebaseService; // Add the protected property
+
+    public function __construct(FirebaseService $firebaseService)
     {
+        $this->firebaseService = $firebaseService; // Initialize the FirebaseService
         \Midtrans\Config::$serverKey = config('midtrans.server_key');
         \Midtrans\Config::$isProduction = false;
         \Midtrans\Config::$isSanitized = true;
@@ -383,6 +387,10 @@ class OrderController extends Controller
                     'expiry_date' => $expiry_date
                 ]);
             }
+        }
+
+        if($order){
+            $this->firebaseService->sendNotification($order->name, 'Telah terbayar', 'anda telah membayar pesanan anda sebesar'.$order->total_price.'🎉','');
         }
 
         return response()->json(['success' => 'Order and package updated successfully'], 200);

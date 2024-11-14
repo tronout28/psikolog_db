@@ -25,6 +25,7 @@ class StoreChatrequest extends FormRequest
         $userModel = get_class(new User());
         return [
             'user_id' => 'required|exists:' . $userModel . ',id',
+            'name'=>'nullable',
             'is_private' => 'nullable|boolean',
         ];
     }

@@ -41,9 +41,9 @@ Route::group(['prefix' => '/order','middleware' => ['auth:sanctum']], function (
 
 
 Route::middleware('auth:sanctum')->group(function () {
-   Route::apiResource('chat', ChatController::class)->only(['index', 'store', 'show']);
-   Route::apiResource('chat_message', ChatMessageController::class)->only(['index', 'store']);
-    });
+    Route::apiResource('chat', ChatController::class)->only(['index', 'store', 'show']);
+    Route::apiResource('chat_message', ChatMessageController::class)->only(['index', 'store']);
+});
 
 Route::group(['prefix' => '/user','role:user',], function () {
     Route::post('/create-profile', [UserController::class, 'createProfileUser'])->middleware('auth:sanctum');

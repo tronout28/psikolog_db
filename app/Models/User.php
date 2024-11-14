@@ -39,6 +39,7 @@ class User extends Authenticatable
         'str_number',
         'school',
         'experience',
+        'notification_token',
     ];
 
     /**
