@@ -46,11 +46,18 @@ class AuthController extends Controller
     {
         $request->validate([
             'phone_number' => 'required|string|max:15',
+            'notification_token' => 'nullable|string',
         ]);
 
         $user = User::where('phone_number', $request->phone_number)->first();
-
+        
         $token = $user->createToken('auth_token')->plainTextToken;
+
+           // Update the notification token if provided
+        if ($request->filled('notification_token')) {
+            $user->notification_token = $request->notification_token;
+            $user->save();
+        }
 
         return response()->json([
             'access_token' => $token,
@@ -142,6 +149,7 @@ class AuthController extends Controller
         $request->validate([
             'login' => 'required|string',
             'password' => 'required|string',
+            'notification_token' => 'nullable|string',
         ], [
             'login.required' => 'Email or username is required.',
             'password.required' => 'Password is required.',
@@ -160,11 +168,11 @@ class AuthController extends Controller
         
         $token = $user->createToken('auth_token')->plainTextToken;
     
-        // // Update the notification token if provided
-        // if ($request->filled('notification_token')) {
-        //     $user->notification_token = $request->notification_token;
-        //     $user->save();
-        // }
+        // Update the notification token if provided
+        if ($request->filled('notification_token')) {
+            $user->notification_token = $request->notification_token;
+            $user->save();
+        }
     
         return response()->json([
             'success' => true,

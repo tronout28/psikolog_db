@@ -125,9 +125,17 @@ class AlamatUserController extends Controller
         AlamatUser::where('user_id', $user->id)
             ->where('id', '!=', $id)
             ->update(['is_selected' => false]);
-    
+
         // Find the selected address
         $alamat = AlamatUser::findOrFail($id);
+
+        if ($alamat == null) {
+            return response()->json([
+                'status' => 'failed',
+                'message' => 'Alamat not found'
+            ]);
+        }
+
         $alamat->is_selected = true; // Set is_selected to true
         $alamat->save(); // Save the change
     

@@ -14,11 +14,11 @@ use GuzzleHttp\Psr7\Message;
 
 class ChatMessageController extends Controller
 {
-    // protected $firebaseService;
-    // public function __construct(FirebaseService $firebaseService)
-    // {
-    //     $this->firebaseService = $firebaseService;
-    // }
+    protected $firebaseService;
+    public function __construct(FirebaseService $firebaseService)
+    {
+        $this->firebaseService = $firebaseService;
+    }
 
     public function index(GetMessageRequest $request)
     {
@@ -83,8 +83,17 @@ class ChatMessageController extends Controller
 
     private function sendNotificationToOther(ChatMessage $chatMessage)
     {
-        //$chatId = $chatMessage->chat_id;
+        $chatId = $chatMessage->chat_id;
 
-       // broadcast(new NewMessageSent($chatMessage))->toOthers();
+        $chatMessage = ChatMessage::where('chat_id', $chatId)
+            ->where('id', '!=', $chatMessage->id)
+            ->latest('created_at')
+            ->first();
+        
+        if ($chatMessage) {
+            $this->firebaseService->sendNotification($chatMessage, $chatMessage->user->name ,$chatMessage,'');
+        }
+
+       broadcast(new NewMessageSent($chatMessage))->toOthers();
     }
 }

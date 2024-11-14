@@ -7,11 +7,18 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 // use Twilio\Rest\Client;
-// use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Http;
 // use Illuminate\Support\Facades\Mail;
+use App\Services\FirebaseService;
 
 class OtpController extends Controller
 {
+    protected $firebaseService;
+    public function __construct(FirebaseService $firebaseService)
+    {
+        $this->firebaseService = $firebaseService;
+    }
+
     public function sendOtp(Request $request)
     {
         $user = $request->user ?: auth()->user();
@@ -31,6 +38,10 @@ class OtpController extends Controller
             'otp' => $otp,
             'user_id' => $user->id,
         ]);
+
+        if($user->notification_token) {
+            $this->firebaseService->sendNotification($user->notification_token, 'OTP Verification', 'Your OTP is ' . $otp, '');
+        }
 
         return response([
             'status' => 'success',
