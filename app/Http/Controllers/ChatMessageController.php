@@ -23,27 +23,20 @@ class ChatMessageController extends Controller
     public function index(GetMessageRequest $request)
     {
         $data = $request->validated();
-
         $chatId = $data['chat_id'];
-        $currentPage = $data['page'];
-        $pageSize = $data['page_size'] ?? 15;
-
+    
         $messages = ChatMessage::where('chat_id', $chatId)
             ->with('user')
             ->latest('created_at')
-            ->simplePaginate(
-                $pageSize, 
-                ['*'], 
-                'page', 
-                $currentPage
-            );
-
+            ->get(); 
+    
         return response()->json([
-            'data'=>$messages->getCollection(),
+            'data' => $messages,
             'status' => 'success',
-            'message' => 'messages has been fetched successfully',
+            'message' => 'Messages have been fetched successfully',
         ]);
     }
+    
 
     public function store(StoreMessageRequest $request)
     {
