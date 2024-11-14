@@ -355,55 +355,64 @@ class OrderController extends Controller
             return response()->json(['error' => 'Invalid signature key'], 403);
         }
 
-        // Ambil Order ID dan cari pesanan di database
-        $orderId = str_replace('ORDER-', '', $request->order_id);
+        // Ambil Order ID dengan memisahkan 'ORDER-' dan ambil ID numerik
+        $orderId = explode('-', str_replace('ORDER-', '', $request->order_id))[0];
         $order = Order::with('user')->find($orderId); // Mengambil data pengguna terkait
 
-        if (!$order || !in_array($request->transaction_status, ['capture', 'settlement'])) {
-            return response()->json(['error' => 'Order not found or transaction not captured'], 404);
+        if (!$order) {
+            return response()->json(['error' => 'Order not found'], 404);
         }
 
-        // Update status pesanan
-        $order->update(['status' => 'paid']);
-
-        // Jika pesanan terkait paket, update status dan tanggal kedaluwarsa PaketTransaction
-        if ($order->paket_id) {
-            $paket = Paket::find($order->paket_id);
-            if (!$paket) {
-                return response()->json(['error' => 'Paket not found'], 404);
-            }
-
-            $expiry_date = match ($paket->paket_type) {
-                '3day' => Carbon::now('Asia/Jakarta')->addDays(3),
-                '7day' => Carbon::now('Asia/Jakarta')->addDays(7),
-                '30day' => Carbon::now('Asia/Jakarta')->addDays(30),
-                'realtime' => Carbon::now('Asia/Jakarta')->addMinutes(45),
-                default => null,
-            };
-
-            $paketTransaction = PaketTransaction::find($order->paket_transaction_id);
-            if ($paketTransaction) {
-                $paketTransaction->update([
-                    'status' => 'active',
-                    'expiry_date' => $expiry_date
-                ]);
-            }
+        // Menangani status 'pending' jika pembayaran belum selesai
+        if ($request->transaction_status == 'pending') {
+            $order->update(['status' => 'pending']);  // Tandai status sebagai pending
+            return response()->json(['success' => 'Order is pending payment'], 200);
         }
 
-         // Mengirim notifikasi jika status transaksi adalah `capture` atau `settlement`
-        if (in_array(strtolower($request->transaction_status), ['capture', 'settlement'])) {
+        // Menangani status 'capture' atau 'settlement'
+        if (in_array($request->transaction_status, ['capture', 'settlement'])) {
+            // Update status pesanan ke 'paid'
+            $order->update(['status' => 'paid']);
+
+            // Jika pesanan terkait paket, update status dan tanggal kedaluwarsa PaketTransaction
+            if ($order->paket_id) {
+                $paket = Paket::find($order->paket_id);
+                if (!$paket) {
+                    return response()->json(['error' => 'Paket not found'], 404);
+                }
+
+                $expiry_date = match ($paket->paket_type) {
+                    '3day' => Carbon::now('Asia/Jakarta')->addDays(3),
+                    '7day' => Carbon::now('Asia/Jakarta')->addDays(7),
+                    '30day' => Carbon::now('Asia/Jakarta')->addDays(30),
+                    'realtime' => Carbon::now('Asia/Jakarta')->addMinutes(45),
+                    default => null,
+                };
+
+                $paketTransaction = PaketTransaction::find($order->paket_transaction_id);
+                if ($paketTransaction) {
+                    $paketTransaction->update([
+                        'status' => 'active',
+                        'expiry_date' => $expiry_date
+                    ]);
+                }
+            }
+
+            // Kirim notifikasi jika pembayaran sukses
             $notificationToken = $order->user->notification_token; // Mengambil notification_token
             if ($notificationToken) {
                 $this->firebaseService->sendNotification(
                     $notificationToken,
-                    'Telah terbayar',
+                    'Selamat '.$order->name.' telah berhasil melakukan pembayaran',
                     'Anda telah membayar pesanan Anda sebesar ' . $order->total_price . ' 🎉',
                     ''
                 );
             }
+
+            return response()->json(['success' => 'Order and package updated successfully'], 200);
         }
 
-        return response()->json(['success' => 'Order and package updated successfully'], 200);
+        return response()->json(['error' => 'Transaction status not supported'], 400);
     }
 
     public function invoice($id)
