@@ -11,6 +11,7 @@ use App\Models\VoucherUsage;
 use App\Services\FirebaseService;
 use App\Models\Voucher;
 use App\Models\AlamatUser;
+use App\Models\User;
 use Carbon\Carbon;
 
 
@@ -388,14 +389,17 @@ class OrderController extends Controller
             }
         }
 
-        // Mengirim notifikasi menggunakan Firebase dengan token dari pengguna
-        if ($order && $order->user && $order->user->notification_token) {
-            $this->firebaseService->sendNotification(
-                $order->name,
-                'Telah terbayar',
-                'Anda telah membayar pesanan Anda sebesar ' . $order->total_price . ' 🎉',
-                $order->user->notification_token // Mengirimkan notification_token
-            );
+         // Mengirim notifikasi jika status transaksi adalah `capture` atau `settlement`
+        if (in_array(strtolower($request->transaction_status), ['capture', 'settlement'])) {
+            $notificationToken = $order->user->notification_token; // Mengambil notification_token
+            if ($notificationToken) {
+                $this->firebaseService->sendNotification(
+                    $notificationToken,
+                    'Telah terbayar',
+                    'Anda telah membayar pesanan Anda sebesar ' . $order->total_price . ' 🎉',
+                    ''
+                );
+            }
         }
 
         return response()->json(['success' => 'Order and package updated successfully'], 200);
