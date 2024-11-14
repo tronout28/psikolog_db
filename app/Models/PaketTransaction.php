@@ -25,5 +25,10 @@ class PaketTransaction extends Model
         return $this->belongsTo(Paket::class);
     }
 
+    public static function countActivePaket()
+    {
+        return self::where('status', 'active')->count();
+    }
+
 
 }

@@ -149,5 +149,14 @@ class AdminController extends Controller
         return response()->json($users);
     }
     
+    public function getTotalDoctors()
+    {
+        $totalDoctors = User::countDoctors();
+
+        return response()->json([
+            'success' => true,
+            'total_doctors' => $totalDoctors,
+        ]);
+    }
 
 }

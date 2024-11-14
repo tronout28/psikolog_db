@@ -107,4 +107,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(Rating::class);
     }
+
+    public static function countDoctors()
+    {
+        return self::where('role', 'dokter')->count();
+    }
 }

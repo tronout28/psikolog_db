@@ -88,4 +88,14 @@ class PaketController extends Controller
             'data' => $pakets
         ]);
     }
+
+    public function getTotalActivePaket()
+    {
+        $totalActivePaket = PaketTransaction::countActivePaket();
+
+        return response()->json([
+            'success' => true,
+            'total_active_paket' => $totalActivePaket,
+        ]);
+    }
 }
