@@ -124,6 +124,7 @@ class OrderController extends Controller
             'success' => true,
             'message' => 'Order created successfully',
             'data' => $order,
+            'notification_token' => $user->notification_token,
             'buku_info' => [
                 'buku_id' => $buku->id,
                 'title' => $buku->title,
@@ -272,6 +273,7 @@ class OrderController extends Controller
             'success' => true,
             'message' => 'Paket order created successfully',
             'data' => $order,
+            'notification_token' => $user->notification_token,
             'paket_info' => [
                 'paket_id' => $paket->id,
                 'title' => $paket->title,
@@ -338,39 +340,37 @@ class OrderController extends Controller
 
     public function callback(Request $request)
     {
-        // Validate required parameters
+        // Validasi parameter yang diterima dari Midtrans
         if (!$request->has(['order_id', 'status_code', 'gross_amount', 'signature_key', 'transaction_status'])) {
             return response()->json(['error' => 'Missing required parameters'], 400);
         }
 
-        // Midtrans server key from configuration
+        // Verifikasi signature key untuk keamanan
         $serverKey = config('midtrans.server_key');
         $hashed = hash('sha512', $request->order_id . $request->status_code . $request->gross_amount . $serverKey);
 
-        // Check if signature key matches for security
         if ($hashed !== $request->signature_key) {
             return response()->json(['error' => 'Invalid signature key'], 403);
         }
 
-        // Extract Order ID
+        // Ambil Order ID dan cari pesanan di database
         $orderId = str_replace('ORDER-', '', $request->order_id);
-        $order = Order::find($orderId);
+        $order = Order::with('user')->find($orderId); // Mengambil data pengguna terkait
 
         if (!$order || !in_array($request->transaction_status, ['capture', 'settlement'])) {
             return response()->json(['error' => 'Order not found or transaction not captured'], 404);
         }
 
-        // Update order status
+        // Update status pesanan
         $order->update(['status' => 'paid']);
 
+        // Jika pesanan terkait paket, update status dan tanggal kedaluwarsa PaketTransaction
         if ($order->paket_id) {
-            // Handle Paket logic
             $paket = Paket::find($order->paket_id);
             if (!$paket) {
                 return response()->json(['error' => 'Paket not found'], 404);
             }
 
-            // Determine expiry date
             $expiry_date = match ($paket->paket_type) {
                 '3day' => Carbon::now('Asia/Jakarta')->addDays(3),
                 '7day' => Carbon::now('Asia/Jakarta')->addDays(7),
@@ -378,7 +378,6 @@ class OrderController extends Controller
                 'realtime' => Carbon::now('Asia/Jakarta')->addMinutes(45),
                 default => null,
             };
-            
 
             $paketTransaction = PaketTransaction::find($order->paket_transaction_id);
             if ($paketTransaction) {
@@ -389,13 +388,18 @@ class OrderController extends Controller
             }
         }
 
-        if($order){
-            $this->firebaseService->sendNotification($order->name, 'Telah terbayar', 'anda telah membayar pesanan anda sebesar'.$order->total_price.'🎉','');
+        // Mengirim notifikasi menggunakan Firebase dengan token dari pengguna
+        if ($order && $order->user && $order->user->notification_token) {
+            $this->firebaseService->sendNotification(
+                $order->name,
+                'Telah terbayar',
+                'Anda telah membayar pesanan Anda sebesar ' . $order->total_price . ' 🎉',
+                $order->user->notification_token // Mengirimkan notification_token
+            );
         }
 
         return response()->json(['success' => 'Order and package updated successfully'], 200);
     }
-
 
     public function invoice($id)
     {
