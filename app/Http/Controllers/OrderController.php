@@ -504,20 +504,48 @@ class OrderController extends Controller
         ->orderBy('month', 'asc')
         ->get();
 
-        // Transform the result to a more readable format for charting
-        $formattedRevenue = $monthlyRevenue->map(function ($revenue) {
-            return [
-                'year' => $revenue->year,
-                'month' => Carbon::createFromDate($revenue->year, $revenue->month, 1)->format('F'), // Full month name
-                'total_revenue' => $revenue->total_revenue,
+        // Get the earliest and latest date in the orders
+        $firstOrder = Order::where('status', 'paid')->orderBy('created_at')->first();
+        $lastOrder = Order::where('status', 'paid')->orderBy('created_at', 'desc')->first();
+
+        if (!$firstOrder || !$lastOrder) {
+            return response()->json([
+                'success' => true,
+                'data' => [],
+            ]);
+        }
+
+        $start = Carbon::parse($firstOrder->created_at)->startOfMonth();
+        $end = Carbon::parse($lastOrder->created_at)->endOfMonth();
+
+        // Generate a list of all months between start and end
+        $allMonths = [];
+        while ($start <= $end) {
+            $allMonths[] = [
+                'year' => $start->year,
+                'month' => $start->month,
+                'month_name' => $start->format('F'),
+                'total_revenue' => 0, // Default to 0 revenue
             ];
+            $start->addMonth();
+        }
+
+        // Map existing data into the allMonths array
+        $monthlyRevenue->each(function ($revenue) use (&$allMonths) {
+            foreach ($allMonths as &$month) {
+                if ($month['year'] == $revenue->year && $month['month'] == $revenue->month) {
+                    $month['total_revenue'] = $revenue->total_revenue;
+                    break;
+                }
+            }
         });
 
         return response()->json([
             'success' => true,
-            'data' => $formattedRevenue,
+            'data' => $allMonths,
         ]);
     }
+
 
     public function getTotalPurchasedPaket()
     {
