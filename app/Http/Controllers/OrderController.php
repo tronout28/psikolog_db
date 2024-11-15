@@ -492,19 +492,19 @@ class OrderController extends Controller
 
     public function getMonthlyRevenue()
     {
-        // Query to get the total revenue of paid orders grouped by month
+        // Query untuk mendapatkan total pendapatan dari pesanan yang dibayar, dikelompokkan berdasarkan bulan
         $monthlyRevenue = Order::select(
             DB::raw('YEAR(created_at) as year'),
             DB::raw('MONTH(created_at) as month'),
             DB::raw('SUM(total_price) as total_revenue')
         )
-        ->where('status', 'paid') // Only include paid orders
+        ->where('status', 'paid') // Hanya menyertakan pesanan yang statusnya dibayar
         ->groupBy(DB::raw('YEAR(created_at)'), DB::raw('MONTH(created_at)'))
         ->orderBy('year', 'asc')
         ->orderBy('month', 'asc')
         ->get();
 
-        // Get the earliest and latest date in the orders
+        // Dapatkan tahun dari pesanan pertama dan terakhir
         $firstOrder = Order::where('status', 'paid')->orderBy('created_at')->first();
         $lastOrder = Order::where('status', 'paid')->orderBy('created_at', 'desc')->first();
 
@@ -515,22 +515,23 @@ class OrderController extends Controller
             ]);
         }
 
-        $start = Carbon::parse($firstOrder->created_at)->startOfMonth();
-        $end = Carbon::parse($lastOrder->created_at)->endOfMonth();
+        // Definisikan awal dan akhir dari rentang tahun (misal: Januari - Desember untuk setiap tahun)
+        $start = Carbon::parse($firstOrder->created_at)->startOfYear(); // Mulai dari Januari tahun pertama
+        $end = Carbon::parse($lastOrder->created_at)->endOfYear();     // Sampai Desember tahun terakhir
 
-        // Generate a list of all months between start and end
+        // Buat daftar semua bulan dari Januari hingga Desember dalam rentang tahun
         $allMonths = [];
         while ($start <= $end) {
             $allMonths[] = [
                 'year' => $start->year,
                 'month' => $start->month,
                 'month_name' => $start->format('F'),
-                'total_revenue' => 0, // Default to 0 revenue
+                'total_revenue' => 0, // Default pendapatan ke 0
             ];
             $start->addMonth();
         }
 
-        // Map existing data into the allMonths array
+        // Peta data pendapatan yang ada ke dalam array allMonths
         $monthlyRevenue->each(function ($revenue) use (&$allMonths) {
             foreach ($allMonths as &$month) {
                 if ($month['year'] == $revenue->year && $month['month'] == $revenue->month) {
@@ -545,6 +546,7 @@ class OrderController extends Controller
             'data' => $allMonths,
         ]);
     }
+
 
 
     public function getTotalPurchasedPaket()
