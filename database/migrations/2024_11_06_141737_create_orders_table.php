@@ -23,7 +23,7 @@ return new class extends Migration
             $table->string('detailed_address')->nullable();
             $table->string('phone_number')->nullable();
             $table->bigInteger('total_price')->nullable();
-            $table->enum('status',['paid','unpaid'])->default('unpaid');
+            $table->enum('status',['paid','unpaid','pending'])->default('unpaid');
             $table->string('postal_code')->nullable();
             $table->string('note')->nullable();
             $table->timestamps();
