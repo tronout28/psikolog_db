@@ -19,9 +19,9 @@ return new class extends Migration
             $table->unsignedBigInteger('paket_transaction_id')->nullable();
             $table->unsignedBigInteger('voucher_id')->nullable();
 
-            $table->string('name');
-            $table->string('detailed_address');
-            $table->string('phone_number');
+            $table->string('name')->nullable();
+            $table->string('detailed_address')->nullable();
+            $table->string('phone_number')->nullable();
             $table->bigInteger('total_price')->nullable();
             $table->enum('status',['paid','unpaid'])->default('unpaid');
             $table->string('postal_code')->nullable();

@@ -91,3 +91,5 @@ Route::get('/images-artikel/{filename}', function ($filename) {
 });
 
 Route::get('/snap_view/{orderId}', [OrderController::class, 'snapView'])->name('snap.view');
+Route::get('/invoice/{id}', [OrderController::class, 'invoiceView'])->name('invoice.view');
+

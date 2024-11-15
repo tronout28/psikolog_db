@@ -8,16 +8,6 @@ use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
-    public function allUser()
-    {
-        $users = User::all();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'User list',
-            'data' => $users,
-        ], 200);
-    }
  
     public function seeOnlyDoctor()
     {

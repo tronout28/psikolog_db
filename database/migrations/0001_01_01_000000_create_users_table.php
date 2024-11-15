@@ -31,6 +31,7 @@ return new class extends Migration
             $table->integer('str_number')->nullable();
             $table->string('school')->nullable();
             $table->string('experience')->nullable();
+            $table->boolean('is_active')->default(true);
 
             $table->rememberToken();
             $table->timestamps();
