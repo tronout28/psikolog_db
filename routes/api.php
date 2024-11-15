@@ -29,8 +29,9 @@ Route::group(['prefix' => '/auth'], function () {
 });
 
 Route::group(['prefix' => '/accessall'], function () {
-    Route::get('/all-user', [UserController::class, 'allUser']);
+    Route::get('/all-user', [AdminController::class, 'allUser']);
     Route::get('/all-doctor', [AdminController::class, 'allDoctor']);
+    Route::get('/all-admin', [UserController::class, 'seeOnlyAdmin']);
     Route::get('/allchat-user', [UserController::class, 'seeOnlyDoctor'])->middleware('auth:sanctum');
     Route::get('/all-orders', [OrderController::class, 'getOrders']);
     Route::get('/total-dokter', [AdminController::class, 'getTotalDoctors']);
@@ -60,6 +61,7 @@ Route::group(['prefix' => '/user','role:user',], function () {
 Route::group(['prefix' => '/admin','role:admin','auth:sanctum'], function () {
     Route::post('/register-dokter', [AdminController::class, 'registerDoctorfromAdmin']);
     Route::post('/update-dokter/{id}', [AdminController::class, 'updateDoctor']);
+    Route::post('/update-active-user/{id}', [AdminController::class, 'updateactiveDoctor']);
     Route::get('/detail-dokter/{id}', [AdminController::class, 'showDetailDoctor']);
 });
 
@@ -82,7 +84,7 @@ Route::group(['prefix' => '/payment','middleware' => ['auth:sanctum']], function
 });
 
 Route::post('/midtrans-callback ', [OrderController::class, 'callback']);
-Route::get('/payment/invoice/{id}', [OrderController::class, 'invoice']);
+Route::get('/payment/invoice/{id}', [OrderController::class, 'invoiceView']);
 Route::get('/all-orders', [OrderController::class, 'getOrders']);
 
 Route::group(['prefix' => '/paket',], function () {

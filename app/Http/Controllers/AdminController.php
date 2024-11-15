@@ -159,4 +159,35 @@ class AdminController extends Controller
         ]);
     }
 
+    public function updateactiveDoctor(Request $request, $id)
+    {
+        $user = User::find($id);
+
+        $request->validate([
+            'is_active' => 'required|boolean',
+        ]);
+
+        if (!$user) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'User not found',
+            ], 404);
+        }
+
+        $user->is_active = $request->is_active;
+        $user->save();
+
+        return response()->json([
+            'data' => $user,
+            'status' => 'success',
+            'message' => 'dokter has been updated successfully',
+        ], 200);
+    }
+
+    public function allUser()
+    {
+        $users = User::where('role', 'user')->get();
+
+        return response()->json($users);
+    }
 }

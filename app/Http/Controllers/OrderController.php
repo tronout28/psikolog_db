@@ -150,17 +150,6 @@ class OrderController extends Controller
             ], 401);
         }
 
-        $selectedAddress = AlamatUser::where('user_id', $user->id)
-            ->where('is_selected', true)
-            ->first();
-
-        if (!$selectedAddress) {
-            return response()->json([
-                'success' => false,
-                'message' => 'No address selected',
-            ], 400);
-        }
-
         $request->validate([
             'paket_id' => 'required|exists:pakets,id',
             'voucher_code' => 'nullable|string|exists:vouchers,code',
@@ -215,7 +204,7 @@ class OrderController extends Controller
             $totalPrice = max(0, $totalPrice);
         }
 
-        // Create PaketTransaction and Order
+        // Create PaketTransaction and Order without address details
         $paketTransaction = PaketTransaction::create([
             'user_id' => $user->id,
             'paket_id' => $paket->id,
@@ -226,12 +215,10 @@ class OrderController extends Controller
             'user_id' => $user->id,
             'paket_id' => $paket->id,
             'paket_transaction_id' => $paketTransaction->id,
+            'name' => $user->name,
+            'detailed_address' => $user->address,
+            'phone_number' => $user->phone_number,
             'voucher_id' => $voucher ? $voucher->id : null,
-            'name' => $selectedAddress->name,
-            'detailed_address' => $selectedAddress->address,
-            'postal_code' => $selectedAddress->postal_code,
-            'note' => $selectedAddress->note,
-            'phone_number' => $selectedAddress->phone_number,
             'status' => 'unpaid',
             'total_price' => $totalPrice,
         ]);
@@ -248,26 +235,21 @@ class OrderController extends Controller
 
         $params = [
             'transaction_details' => [
-                'order_id' => $transactionOrderId, // Use unique transaction order ID
+                'order_id' => $transactionOrderId,
                 'gross_amount' => $order->total_price,
             ],
             'customer_details' => [
-                'name' => $selectedAddress->name,
+                'name' => $user->name,
                 'email' => $user->email,
-                'phone' => $selectedAddress->phone_number,
-                'postal_code' => $selectedAddress->postal_code,
-                'note' => $selectedAddress->note,
-                'address' => $selectedAddress->address,
+                'phone' => $user->phone_number,
+                'ages' => $user->ages, // assuming age is a field in user table
+                'gender' => $user->gender, // assuming gender is a field in user table
+                'status' => $user->status, // assuming status is a field in user table
             ],
         ];
 
-        // Only get a new Snap token if it hasn't been generated already
-        if (!$order->snap_token) {
-            $snapToken = \Midtrans\Snap::getSnapToken($params);
-            $order->update(['snap_token' => $snapToken]);
-        } else {
-            $snapToken = $order->snap_token;
-        }
+        $snapToken = \Midtrans\Snap::getSnapToken($params);
+        $order->update(['snap_token' => $snapToken]);
 
         $snapViewUrl = route('snap.view', ['orderId' => $order->id]);
 
@@ -299,6 +281,7 @@ class OrderController extends Controller
         ], 201);
     }
 
+
     public function snapView($orderId)
     {
         $order = Order::find($orderId);
@@ -306,39 +289,65 @@ class OrderController extends Controller
             abort(404, "Order not found");
         }
 
-        $selectedAddress = AlamatUser::where('user_id', $order->user_id)->where('is_selected', true)->first();
-        if (!$selectedAddress) {
-            abort(404, "No address selected for this user");
+        $user = User::find($order->user_id);
+    
+        // Check if the order is for a book or a package
+        if ($order->buku_id) {
+            // Order is for a book, include address details
+            $selectedAddress = AlamatUser::where('user_id', $order->user_id)
+                ->where('is_selected', true)
+                ->first();
+    
+            if (!$selectedAddress) {
+                abort(404, "No address selected for this user");
+            }
+    
+            $params = [
+                'transaction_details' => [
+                    'order_id' => 'ORDER-' . $order->id . '-' . time(),
+                    'gross_amount' => $order->total_price,
+                ],
+                'customer_details' => [
+                    'name' => $selectedAddress->name,
+                    'email' => $order->user->email,
+                    'phone' => $selectedAddress->phone_number,
+                    'address' => $selectedAddress->address,
+                    'postal_code' => $selectedAddress->postal_code,
+                    'note' => $selectedAddress->note,
+                ],
+            ];
+        } else {
+            // Order is for a package, exclude address details
+            $params = [
+                'transaction_details' => [
+                    'order_id' => 'ORDER-' . $order->id . '-' . time(),
+                    'gross_amount' => $order->total_price,
+                ],
+                'customer_details' => [
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'phone' => $user->phone_number,
+                    'ages' => $user->ages, // Assuming ages is a field in user table
+                    'gender' => $user->gender, // Assuming gender is a field in user table
+                    'status' => $user->status, // Assuming status is a field in user table
+                ],
+            ];
         }
-
-        $transactionOrderId = 'ORDER-' . $order->id . '-' . time();
-        $params = [
-            'transaction_details' => [
-                'order_id' => $transactionOrderId,
-                'gross_amount' => $order->total_price,
-            ],
-            'customer_details' => [
-                'name' => $selectedAddress->name,
-                'email' => $order->user->email,
-                'phone' => $selectedAddress->phone_number,
-                'address' => $selectedAddress->address,
-                'postal_code' => $selectedAddress->postal_code,
-                'note' => $selectedAddress->note,
-            ],
-        ];
-
+    
+        // Generate or retrieve Snap Token
         if (!$order->snap_token) {
             $snapToken = \Midtrans\Snap::getSnapToken($params);
             $order->update(['snap_token' => $snapToken]);
         } else {
             $snapToken = $order->snap_token;
         }
-
+    
         return view('snap_view', [
             'snapToken' => $snapToken,
             'order_id' => $order->id,
         ]);
     }
+    
 
     public function callback(Request $request)
     {
@@ -415,22 +424,43 @@ class OrderController extends Controller
         return response()->json(['error' => 'Transaction status not supported'], 400);
     }
 
-    public function invoice($id)
+    public function invoiceView($id)
     {
         $order = Order::find($id);
-
         if (!$order) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Order not found',
-            ], 404);
+            abort(404, "Order not found");
         }
 
-        return response()->json([
-            'success' => true,
-            'data' => $order,
+        $user = User::find($order->user_id);
+        if (!$user) {
+            abort(404, "User not found");
+        }
+
+        $buku = null;
+        $paket = null;
+
+        // Tentukan apakah pesanan untuk buku atau paket
+        if ($order->buku_id) {
+            $buku = Buku::find($order->buku_id);
+            if (!$buku) {
+                abort(404, "Book not found for this order");
+            }
+        } elseif ($order->paket_id) {
+            $paket = Paket::find($order->paket_id);
+            if (!$paket) {
+                abort(404, "Package not found for this order");
+            }
+        }
+
+        // Render view invoice dengan data yang sesuai
+        return view('invoice_view', [
+            'order' => $order,
+            'user' => $user,
+            'buku' => $buku,
+            'paket' => $paket,
         ]);
     }
+
 
     public function histories()
     {
@@ -514,6 +544,4 @@ class OrderController extends Controller
             'total_books_purchased' => $totalBuku,
         ]);
     }
-
-
 }

@@ -13,7 +13,7 @@
     <script type="text/javascript">
         window.snap.pay("{{ $snapToken }}", {
             onSuccess: function(result) {
-                window.location.href = "/api/payment/invoice/{{ $order_id }}";
+                window.location.href = "/invoice/{{ $order_id }}"; 
                 alert("Payment successful!"); 
                 console.log(result);
             },

@@ -40,6 +40,7 @@ class User extends Authenticatable
         'school',
         'experience',
         'notification_token',
+        'is_active',
     ];
 
     /**
