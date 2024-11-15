@@ -83,7 +83,7 @@ Route::group(['prefix' => '/payment','middleware' => ['auth:sanctum']], function
     Route::get('/history', [OrderController::class, 'histories']);
 });
 
-Route::post('/midtrans-callback ', [OrderController::class, 'callback']);
+Route::post('/midtrans-callback', [OrderController::class, 'callback']);
 Route::get('/payment/invoice/{id}', [OrderController::class, 'invoiceView']);
 Route::get('/all-orders', [OrderController::class, 'getOrders']);
 
