@@ -78,7 +78,6 @@ class PaketController extends Controller
         ]);
     }
 
-
     public function showpaketuser($id)
     {
         $pakets = Paket::with('user')->where('user_id', $id)->get();
@@ -98,4 +97,39 @@ class PaketController extends Controller
             'total_active_paket' => $totalActivePaket,
         ]);
     }
+
+    public function filterbytype(Request $request)
+    {
+        // Ambil parameter 'type' dari query string
+        $type = $request->query('type');
+    
+        // Validasi apakah parameter 'type' ada dan valid
+        $validTypes = ['3day', '7day', '30day', 'realtime'];
+        if (!$type || !in_array($type, $validTypes)) {
+            return response()->json([
+                'message' => 'Invalid paket type or missing type parameter',
+                'data' => [],
+                'status' => 'error'
+            ], 400);
+        }
+    
+        // Fetch pakets berdasarkan type
+        $pakets = Paket::with('user')->where('paket_type', $type)->get();
+    
+        // Periksa jika hasil kosong
+        if ($pakets->isEmpty()) {
+            return response()->json([
+                'message' => 'No pakets found for the specified type',
+                'data' => [],
+                'status' => 'success'
+            ], 200);
+        }
+    
+        return response()->json([
+            'message' => 'List of pakets by type',
+            'data' => $pakets,
+            'status' => 'success'
+        ], 200);
+    }    
+
 }

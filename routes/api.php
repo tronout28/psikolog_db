@@ -55,6 +55,7 @@ Route::group(['prefix' => '/user','role:user',], function () {
     Route::post('/create-profile', [UserController::class, 'createProfileUser'])->middleware('auth:sanctum');
     Route::post('/send-otp', [OtpController::class, 'sendOtp'])->middleware('auth:sanctum');
     Route::post('/verify-otp', [OtpController::class, 'verifyOtp'])->middleware('auth:sanctum');
+    Route::post('/update-profile', [UserController::class, 'updateimage'])->middleware('auth:sanctum');
     Route::post('/send-otp-phonenumber', [OtpController::class, 'sendOtpwithPhoneNumber']);
 });
 
@@ -91,12 +92,14 @@ Route::group(['prefix' => '/paket',], function () {
     Route::post('/add-paket', [PaketController::class, 'store']);
     Route::get('/all-paket', [PaketController::class, 'index']);
     Route::get('/paket-dokter/{id}', [PaketController::class, 'showpaketuser']);
+    Route::get('/get-paketype', [PaketController::class, 'filterbytype']);
 });
 
 Route::group(['prefix' => '/voucher',], function () {
     Route::post('/add-voucher', [VoucherController::class, 'store']);
     Route::delete('/delete', [VoucherController::class, 'destroy']);
     Route::get('/all-voucher', [VoucherController::class, 'index']);
+    Route::get('/valid-voucher', [VoucherController::class, 'validateVoucher']);
 });
 
 Route::group(['prefix' => '/banner'], function () {

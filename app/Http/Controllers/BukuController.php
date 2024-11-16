@@ -11,24 +11,31 @@ class BukuController extends Controller
     {
         $request->validate([
             'title' => 'required|string',
-            'image' => 'required|image',
+            'image' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:5000',
             'description' => 'required|string',
             'price' => 'required|numeric',
         ]);
         
-
         $buku = Buku::create([
             'title' => $request->title,
             'description' => $request->description,
+            'image' => '',
             'price' => $request->price,
         ]);
 
-        if ($request->hasFile('image')) {
+         if ($request->hasFile('image')) {
             $image = $request->file('image');
             $imageName = time() . '.' . $image->extension();
             $image->move(public_path('images-book'), $imageName);
-            $buku->image = url('images-book/' . $buku->image);
+
+            // Only try to delete if the buku has a previous image
+            if ($buku->image && file_exists(public_path('images-book/' . $buku->image))) {
+                unlink(public_path('images-book/' . $buku->image));
+            }
+
+            // Save only the image file name in the database
             $buku->image = $imageName;
+            $buku->image = url('images-book/' . $buku->image);
             $buku->save();
         }
         
@@ -44,9 +51,6 @@ class BukuController extends Controller
     {
         $buku = Buku::all();
 
-        foreach ($buku as $book) {
-            $book->image = url('images-book/' . $book->image);
-        }
 
         return response()->json([
             'success' => true,
@@ -65,8 +69,6 @@ class BukuController extends Controller
                 'message' => 'Buku not found',
             ], 404);
         }
-
-        $buku->image = url('images-book/' . $buku->image);
 
         return response()->json([
             'success' => true,
@@ -101,8 +103,9 @@ class BukuController extends Controller
             if ($buku->image && file_exists(public_path('images-book/' . $buku->image))) {
                 unlink(public_path('images-book/' . $buku->image));
             }
-            $buku->image = url('images-book/' . $buku->image);
             $buku->image = $imageName;
+            $buku->image = url('images-book/' . $buku->image);
+            $buku->save();
         }
 
         $buku->title = $request->title ?? $buku->title;

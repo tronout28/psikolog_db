@@ -106,5 +106,31 @@ class UserController extends Controller
         ], 201);
     }
 
-    
+    public function updateimage(Request $request)
+    {
+        $request->validate([
+            'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:5000',
+        ]);
+
+        $user = $request->user();
+
+        if ($request->hasFile('profile_picture')) {
+            $image = $request->file('profile_picture');
+            $imageName = time().'.'.$image->extension();
+            $image->move(public_path('images-user'), $imageName);
+        
+            if ($user->profile_picture && file_exists(public_path('images-user/'.$user->profile_picture))) {
+                unlink(public_path('images-user/'.$user->profile_picture));
+            }
+        
+            $user->profile_picture = $imageName;
+            $user->profile_picture = url('images-user/' . $user->profile_picture);
+            $user->save();
+        }
+
+        return response()->json([
+            'message' => 'profile picture updated successfully',
+            'profile_picture' => $user->profile_picture,
+        ]);
+    }
 }
