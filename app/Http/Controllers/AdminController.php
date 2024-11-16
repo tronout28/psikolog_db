@@ -74,7 +74,6 @@ class AdminController extends Controller
             'phone_number' => 'nullable|string',
             'ages' => 'nullable|string',
             'address' => 'nullable|string',
-            'role' => 'nullable|string|in:dokter', // Optional role, defaults to 'user'
             'str_number' => 'nullable|int',
             'school' => 'nullable|string',
             'experience' => 'nullable|string',
@@ -93,10 +92,10 @@ class AdminController extends Controller
         $user->phone_number = $request->phone_number;
         $user->ages = $request->ages;
         $user->address = $request->address;
-        $user->role = $request->role ?? 'dokter';
         $user->str_number = $request->str_number;
         $user->school = $request->school;
         $user->experience = $request->experience;
+        $user->update();
 
         if ($request->hasFile('profile_picture')) {
             $image = $request->file('profile_picture');
@@ -110,11 +109,10 @@ class AdminController extends Controller
 
             // Simpan nama file gambar baru di database
             $user->profile_picture = $imageName;
+            $user->profile_picture = url('images-dokter/' . $user->profile_picture);
+            $user->save();
         }
 
-        $user->save();
-
-        $user->profile_picture = url('images-dokter/' . $user->profile_picture);
 
         return response()->json([
             'data' => $user,

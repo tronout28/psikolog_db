@@ -50,7 +50,7 @@
     <div class="invoice-container">
         <div class="header">
             <h1>Invoice</h1>
-            <p>Order ID: {{ $order->id }}</p>
+            <p>Order For: {{ $user->name }}</p>
             <p>Date: {{ $order->created_at->format('d-m-Y') }}</p>
         </div>
 
