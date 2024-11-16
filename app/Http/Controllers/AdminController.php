@@ -68,6 +68,13 @@ class AdminController extends Controller
     {
         $user = User::find($id);
 
+        if (!$user) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'User not found',
+            ], 404);
+        }
+
         $request->validate([
             'name' => 'nullable|string',
             'email' => 'nullable|email|unique:users,email,' . $id,
@@ -80,22 +87,17 @@ class AdminController extends Controller
             'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg',
         ]);
 
-        if (!$user) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'User not found',
-            ], 404);
-        }
+        // Perbarui hanya jika properti diberikan dalam request
+        if ($request->filled('name')) $user->name = $request->name;
+        if ($request->filled('email')) $user->email = $request->email;
+        if ($request->filled('phone_number')) $user->phone_number = $request->phone_number;
+        if ($request->filled('ages')) $user->ages = $request->ages;
+        if ($request->filled('address')) $user->address = $request->address;
+        if ($request->filled('str_number')) $user->str_number = $request->str_number;
+        if ($request->filled('school')) $user->school = $request->school;
+        if ($request->filled('experience')) $user->experience = $request->experience;
 
-        $user->name = $request->name;
-        $user->email = $request->email;
-        $user->phone_number = $request->phone_number;
-        $user->ages = $request->ages;
-        $user->address = $request->address;
-        $user->str_number = $request->str_number;
-        $user->school = $request->school;
-        $user->experience = $request->experience;
-        $user->update();
+        $user->save();
 
         if ($request->hasFile('profile_picture')) {
             $image = $request->file('profile_picture');
@@ -103,16 +105,14 @@ class AdminController extends Controller
             $image->move(public_path('images-dokter'), $imageName);
 
             // Hapus gambar profil lama jika ada
-            if ($user->profile_picture && file_exists(public_path('images-dokter/' . $user->profile_picture))) {
-                unlink(public_path('images-dokter/' . $user->profile_picture));
+            if ($user->profile_picture && file_exists(public_path('images-dokter/' . basename($user->profile_picture)))) {
+                unlink(public_path('images-dokter/' . basename($user->profile_picture)));
             }
 
             // Simpan nama file gambar baru di database
-            $user->profile_picture = $imageName;
-            $user->profile_picture = url('images-dokter/' . $user->profile_picture);
+            $user->profile_picture = url('images-dokter/' . $imageName);
             $user->save();
         }
-
 
         return response()->json([
             'data' => $user,
@@ -120,6 +120,7 @@ class AdminController extends Controller
             'message' => 'dokter has been updated successfully',
         ], 200);
     }
+
 
     public function showDetailDoctor($id)
     {
