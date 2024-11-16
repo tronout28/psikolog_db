@@ -72,5 +72,39 @@ class UserController extends Controller
         ], 201);
     }
 
+    public function updateProfileUser(Request $request,$id)
+    {
+        $user = User::find($id);
+
+        if (!$user) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'User not found',
+            ], 404);
+        }
+
+        $request->validate([
+            'name' => 'nullable|string|max:255',
+            'gender' => ['nullable', Rule::in(['laki-laki', 'perempuan'])],
+            'email' => 'nullable|email|unique:users,email,' . $user->id,
+            'ages' => 'nullable|integer',
+            'status' => ['nullable', Rule::in(['berkeluarga', 'tidak berkeluarga'])],
+        ]);
+
+        if ($request->filled('name')) $user->name = $request->name;
+        if ($request->filled('email')) $user->email = $request->email;
+        if ($request->filled('gender')) $user->gender = $request->gender;
+        if ($request->filled('ages')) $user->ages = $request->ages;
+        if ($request->filled('status')) $user->status = $request->status;
+
+        $user->save();
+
+        return response()->json([
+            'data' => $user,
+            'status' => 'success',
+            'message' => 'User profile has been updated successfully',
+        ], 201);
+    }
+
     
 }
