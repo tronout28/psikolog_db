@@ -19,6 +19,19 @@ class PaketController extends Controller
             'paket_type' => ['required', Rule::in(['3day', '7day', '30day', 'realtime'])],
         ]);
 
+        // Cek apakah user sudah memiliki paket dengan tipe yang sama
+        $existingPaket = Paket::where('user_id', $request->user_id)
+            ->where('paket_type', $request->paket_type)
+            ->first();
+
+        if ($existingPaket) {
+            return response()->json([
+                'message' => 'User already has a paket with the same type!',
+                'data' => $existingPaket // Mengembalikan paket yang sudah ada sebagai informasi tambahan
+            ], 400); // Bad Request
+        }
+
+        // Buat paket baru jika tidak ada duplikat
         $paket = Paket::create([
             'user_id' => $request->user_id,
             'title' => $request->title,
@@ -31,6 +44,7 @@ class PaketController extends Controller
             'data' => $paket
         ]);
     }
+
 
     public function index()
     {
@@ -132,4 +146,65 @@ class PaketController extends Controller
         ], 200);
     }    
 
+    public function update(Request $request, $id)
+    {
+        $request->validate([
+            'title' => 'nullable|string',
+            'price' => 'nullable|numeric',
+            'paket_type' => ['nullable', Rule::in(['3day', '7day', '30day', 'realtime'])],
+        ]);
+
+        // Cari paket berdasarkan ID
+        $paket = Paket::find($id);
+
+        if (!$paket) {
+            return response()->json([
+                'message' => 'Paket not found!',
+            ], 404); // Not Found
+        }
+
+        // Cek apakah perubahan `paket_type` menyebabkan duplikasi
+        if ($request->has('paket_type')) {
+            $existingPaket = Paket::where('user_id', $paket->user_id)
+                ->where('paket_type', $request->paket_type)
+                ->where('id', '!=', $paket->id) // Pastikan bukan paket yang sedang diupdate
+                ->first();
+
+            if ($existingPaket) {
+                return response()->json([
+                    'message' => 'User already has a paket with the same type!',
+                    'data' => $existingPaket // Informasi paket duplikat
+                ], 400); // Bad Request
+            }
+        }
+
+        // Perbarui data paket hanya jika ada input baru
+        if ($request->filled('title')) $paket->title = $request->title;
+        if ($request->filled('price')) $paket->price = $request->price;
+        if ($request->filled('paket_type')) $paket->paket_type = $request->paket_type;
+
+        $paket->save();
+
+        return response()->json([
+            'message' => 'Paket updated successfully!',
+            'data' => $paket
+        ], 200); // OK
+    }
+
+    public function destroy($id)
+    {
+        $paket = Paket::find($id);
+
+        if (!$paket) {
+            return response()->json([
+                'message' => 'Paket not found!',
+            ], 404); // Not Found
+        }
+
+        $paket->delete();
+
+        return response()->json([
+            'message' => 'Paket deleted!',
+        ]);
+    }
 }
