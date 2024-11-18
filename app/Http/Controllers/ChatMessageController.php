@@ -110,5 +110,4 @@ class ChatMessageController extends Controller
             }
         }
     }
-
 }
