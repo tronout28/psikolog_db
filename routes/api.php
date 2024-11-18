@@ -90,6 +90,8 @@ Route::get('/all-orders', [OrderController::class, 'getOrders']);
 
 Route::group(['prefix' => '/paket',], function () {
     Route::post('/add-paket', [PaketController::class, 'store']);
+    Route::delete('/delete-paket/{id}', [PaketController::class, 'destroy']);
+    Route::put('/update-paket/{id}', [PaketController::class, 'update']);
     Route::get('/all-paket', [PaketController::class, 'index']);
     Route::get('/paket-dokter/{id}', [PaketController::class, 'showpaketuser']);
     Route::get('/get-paketype', [PaketController::class, 'filterbytype']);

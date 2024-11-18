@@ -68,7 +68,7 @@ class ChatMessageController extends Controller
         $chatMessage->load('user');
 
         // Trigger a broadcast event if needed (e.g., to notify other chat participants)
-        // $this->sendNotificationToOther($chatMessage);
+        $this->sendNotificationToOther($chatMessage);
 
         return response()->json([
             'success' => true,
