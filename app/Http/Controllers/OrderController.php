@@ -473,27 +473,27 @@ class OrderController extends Controller
             ], 401);
         }
 
-        $type = $request->query('type'); // 'buku', 'paket', or null
+        $type = $request->query('type'); 
 
         $validTypes = ['buku', 'paket'];
         if ($type && !in_array($type, $validTypes)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Invalid type parameter. Allowed values: buku, paket',
+                'message' => 'Invalid type parameter. Allowed values: books, pakets',
             ], 400);
         }
 
         $query = Order::with(['user']);
 
         if ($type === 'buku') {
-            $query->whereNotNull('buku_id');
+            $query->whereNotNull('buku_id'); 
         } elseif ($type === 'paket') {
-            $query->whereNotNull('paket_id')
-                ->with('paketTransaction'); // Include expiry_date from paket_transaction
+            $query->whereNotNull('paket_id'); 
         }
 
         $orders = $query->where('user_id', $user->id)->orderBy('created_at', 'desc')->get();
 
+        // Jika tidak ada hasil
         if ($orders->isEmpty()) {
             return response()->json([
                 'success' => true,
@@ -502,33 +502,12 @@ class OrderController extends Controller
             ]);
         }
 
-        $formattedOrders = $orders->map(function ($order) use ($type) {
-            $data = [
-                'id' => $order->id,
-                'user_id' => $order->user_id,
-                'buku_id' => $order->buku_id,
-                'paket_id' => $order->paket_id,
-                'total_price' => $order->total_price,
-                'status' => $order->status,
-                'created_at' => $order->created_at,
-                'updated_at' => $order->updated_at,
-                'expiry_date' =>  $order->paketTransaction->expiry_date ?? null,
-            ];
-
-            if ($type === 'paket' && $order->paketTransaction) {
-                $data['expiry_date'] = $order->paketTransaction->expiry_date;
-            }
-
-            return $data;
-        });
-
         return response()->json([
             'success' => true,
             'message' => 'Order histories retrieved successfully',
-            'data' => $formattedOrders,
+            'data' => $orders,
         ]);
     }
-
 
 
     public function getOrders()
