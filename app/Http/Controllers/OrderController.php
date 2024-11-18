@@ -512,6 +512,7 @@ class OrderController extends Controller
                 'status' => $order->status,
                 'created_at' => $order->created_at,
                 'updated_at' => $order->updated_at,
+                'expiry_date' =>  $order->paketTransaction->expiry_date ?? null,
             ];
 
             if ($type === 'paket' && $order->paketTransaction) {
