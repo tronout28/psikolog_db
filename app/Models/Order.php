@@ -42,8 +42,9 @@ class Order extends Model
 
     public function paketTransaction()
     {
-        return $this->belongsTo(PaketTransaction::class);
+        return $this->belongsTo(PaketTransaction::class, 'paket_transaction_id');
     }
+
 
     public function voucher()
     {

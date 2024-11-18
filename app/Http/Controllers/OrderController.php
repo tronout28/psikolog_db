@@ -462,9 +462,10 @@ class OrderController extends Controller
     }
 
 
-    public function histories()
+    public function histories(Request $request)
     {
         $user = auth()->user();
+
         if (!$user) {
             return response()->json([
                 'success' => false,
@@ -472,13 +473,62 @@ class OrderController extends Controller
             ], 401);
         }
 
-        $orders = Order::with(['user'])->where('user_id', $user->id)->orderBy('created_at', 'desc')->get();
+        $type = $request->query('type'); // 'buku', 'paket', or null
+
+        $validTypes = ['buku', 'paket'];
+        if ($type && !in_array($type, $validTypes)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid type parameter. Allowed values: buku, paket',
+            ], 400);
+        }
+
+        $query = Order::with(['user']);
+
+        if ($type === 'buku') {
+            $query->whereNotNull('buku_id');
+        } elseif ($type === 'paket') {
+            $query->whereNotNull('paket_id')
+                ->with('paketTransaction'); // Include expiry_date from paket_transaction
+        }
+
+        $orders = $query->where('user_id', $user->id)->orderBy('created_at', 'desc')->get();
+
+        if ($orders->isEmpty()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'No orders found for the specified type',
+                'data' => [],
+            ]);
+        }
+
+        $formattedOrders = $orders->map(function ($order) use ($type) {
+            $data = [
+                'id' => $order->id,
+                'user_id' => $order->user_id,
+                'buku_id' => $order->buku_id,
+                'paket_id' => $order->paket_id,
+                'total_price' => $order->total_price,
+                'status' => $order->status,
+                'created_at' => $order->created_at,
+                'updated_at' => $order->updated_at,
+            ];
+
+            if ($type === 'paket' && $order->paketTransaction) {
+                $data['expiry_date'] = $order->paketTransaction->expiry_date;
+            }
+
+            return $data;
+        });
 
         return response()->json([
             'success' => true,
-            'data' => $orders,
+            'message' => 'Order histories retrieved successfully',
+            'data' => $formattedOrders,
         ]);
     }
+
+
 
     public function getOrders()
     {
