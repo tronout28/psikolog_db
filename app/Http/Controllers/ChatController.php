@@ -44,7 +44,7 @@ class ChatController extends Controller
             })->filter()->first(); // Ambil expiry_date pertama yang tersedia
     
             return [
-                'chat_id' => $chat->id,
+                'id' => $chat->id,
                 'expiry_date' => $expiryDate,
                 'is_private' => $chat->is_private,
                 'updated_at' => $chat->updated_at,
