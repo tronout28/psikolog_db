@@ -118,4 +118,10 @@ class User extends Authenticatable
     {
         return self::where('role', 'user')->count();
     }
+
+    public function paketTransaction()
+    {
+        return $this->hasOne(PaketTransaction::class, 'user_id')->latest('expiry_date');
+    }
+
 }

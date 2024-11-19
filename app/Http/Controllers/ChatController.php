@@ -16,24 +16,46 @@ class ChatController extends Controller
     public function index(GetChatRequest $request)
     {
         $data = $request->validated();
-
+    
         $isPrivate = 1;
-
+    
         if ($request->has('is_private')) {
             $isPrivate = (int) $data['is_private'];
         }
-
+    
+        // Ambil chats dengan relasi ke paket_transactions untuk mendapatkan expiry_date
         $chats = Chat::where('is_private', $isPrivate)
             ->hasParticipant(auth()->user()->id)
-            ->with(['lastmessage.user', 'participants.user']) // Eager load relationships
+            ->with([
+                'lastmessage.user',
+                'participants.user',
+                'participants.user.paketTransaction' => function ($query) {
+                    $query->select('user_id', 'expiry_date')->where('status', 'active');
+                }
+            ])
             ->latest('updated_at')
             ->get();
-
-        return response()->json($chats);
-    }
-
     
-
+        // Tambahkan expiry_date ke level atas respons
+        $formattedChats = $chats->map(function ($chat) {
+            // Cari expiry_date peserta dengan transaksi aktif
+            $expiryDate = $chat->participants->map(function ($participant) {
+                return $participant->user->paketTransaction->expiry_date ?? null;
+            })->filter()->first(); // Ambil expiry_date pertama yang tersedia
+    
+            return [
+                'chat_id' => $chat->id,
+                'expiry_date' => $expiryDate,
+                'is_private' => $chat->is_private,
+                'updated_at' => $chat->updated_at,
+                'lastmessage' => $chat->lastmessage,
+                'participants' => $chat->participants,
+            ];
+        });
+    
+        return response()->json($formattedChats);
+    }
+    
     /**
      * Store a newly created resource in storage.
      */
