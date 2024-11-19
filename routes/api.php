@@ -35,6 +35,7 @@ Route::group(['prefix' => '/accessall'], function () {
     Route::get('/allchat-user', [UserController::class, 'seeOnlyDoctor'])->middleware('auth:sanctum');
     Route::get('/all-orders', [OrderController::class, 'getOrders']);
     Route::get('/total-dokter', [AdminController::class, 'getTotalDoctors']);
+    Route::get('/total-user', [AdminController::class, 'getTotalUser']);
     Route::get('/revenue', [OrderController::class, 'getMonthlyRevenue']);
     Route::get('/total-paket', [OrderController::class, 'getTotalPurchasedPaket']);
     Route::get('/total-book', [OrderController::class, 'getTotalPurchasedBooks']);

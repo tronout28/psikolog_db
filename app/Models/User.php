@@ -113,4 +113,9 @@ class User extends Authenticatable
     {
         return self::where('role', 'dokter')->count();
     }
+
+    public static function countUser()
+    {
+        return self::where('role', 'user')->count();
+    }
 }
