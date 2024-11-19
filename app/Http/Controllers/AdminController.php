@@ -158,6 +158,16 @@ class AdminController extends Controller
         ]);
     }
 
+    public function getTotalUser()
+    {
+        $Totaluser = User::countUser();
+        
+        return response()->json([
+            'success' => true,
+            'Total_user' => $Totaluser,
+        ]);
+    }
+
     public function updateactiveDoctor(Request $request, $id)
     {
         $user = User::find($id);
