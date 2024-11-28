@@ -89,6 +89,7 @@ class OrderController extends Controller
             'postal_code' => $selectedAddress->postal_code,
             'note' => $selectedAddress->note,
             'status' => 'unpaid',
+            'status_order' => 'pending',
             'total_price' => $totalPrice,
             'voucher_id' => $voucher ? $voucher->id : null,
         ]);
@@ -602,6 +603,40 @@ class OrderController extends Controller
         return response()->json([
             'success' => true,
             'total_books_purchased' => $totalBuku,
+        ]);
+    }
+
+    public function statusOrderEdit(Request $request,$id){
+
+        $order = Order::find($id);
+
+        $request->validate([
+            'status_order' => 'required|string|in:pending,complete',
+        ]);
+
+        if (!$order) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Order not found',
+            ], 404);
+        }
+
+        $order->status_order = $request->status_order;
+        $order->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Order status has been updated successfully',
+        ], 200);
+    }
+
+    public function getbookorder()
+    {
+        $orders = Order::with(['user','buku'])->whereNotNull('buku_id')->orderBy('created_at', 'desc')->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $orders,
         ]);
     }
 }

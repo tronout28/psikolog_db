@@ -10,6 +10,7 @@ use App\Services\FirebaseService;
 use App\Models\ChatMessage;
 use Carbon\Carbon;
 use App\Events\NewMessageSent;
+use Illuminate\Support\Facades\Log;
 use GuzzleHttp\Psr7\Message;
 
 class ChatMessageController extends Controller
@@ -80,33 +81,35 @@ class ChatMessageController extends Controller
 
     private function sendNotificationToOther(ChatMessage $chatMessage)
     {
-        // Broadcast message ke peserta lain
         broadcast(new NewMessageSent($chatMessage))->toOthers();
-
-        // Mendapatkan ID dari chat dan ID pengirim
+    
         $chatId = $chatMessage->chat_id;
-        $senderUserId = auth()->user();
-
-        // Mendapatkan data Chat dengan peserta lain
+        $senderUserId = auth()->id();
+    
         $chat = Chat::where('id', $chatId)
             ->with(['participants' => function ($query) use ($senderUserId) {
-                $query->where('user_id', '!=', $senderUserId); // Ambil peserta yang bukan pengirim pesan
+                $query->where('user_id', '!=', $senderUserId);
             }])
             ->first();
-
-        // Jika ada peserta lain, kirim notifikasi Firebase
-        if ($chat && count($chat->participants) > 0) {
-            $otherUser = $chat->participants[0];
+    
+        if ($chat && $chat->participants->isNotEmpty()) {
+            $otherUser = $chat->participants->first();
             $receiverUser = $otherUser->user;
-
-            // Pastikan token notifikasi Firebase tersedia
-            if ($receiverUser->notification_token) {
-                $this->firebaseService->sendNotification(
-                    $receiverUser->notification_token,      // Token tujuan
-                    $chatMessage->user->name,               // Nama pengirim pesan sebagai judul
-                    $chatMessage->message,                  // Isi pesan sebagai body notifikasi
-                    ''                                     // Kosongkan imageUrl jika tidak ada gambar
-                );
+    
+            if (!empty($receiverUser->notification_token)) {
+                try {
+                    $this->firebaseService->sendNotification(
+                        $receiverUser->notification_token,
+                        $chatMessage->user->name,
+                        $chatMessage->message,
+                        ''
+                    );
+                } catch (\Exception $e) {
+                    Log::error('Error sending Firebase notification', [
+                        'error' => $e->getMessage(),
+                        'chat_id' => $chatMessage->chat_id,
+                    ]);
+                }
             }
         }
     }
