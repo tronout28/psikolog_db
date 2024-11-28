@@ -65,6 +65,8 @@ Route::group(['prefix' => '/admin','role:admin','auth:sanctum'], function () {
     Route::post('/update-dokter/{id}', [AdminController::class, 'updateDoctor']);
     Route::post('/update-active-user/{id}', [AdminController::class, 'updateactiveDoctor']);
     Route::get('/detail-dokter/{id}', [AdminController::class, 'showDetailDoctor']);
+    Route::put('/order-status/{id}', [OrderController::class, 'statusOrderEdit']);
+    Route::get('/book-orders', [OrderController::class, 'getbookorder']);
 });
 
 Route::group(['prefix' => '/doctor','role:dokter','middleware' => ['auth:sanctum']], function () {

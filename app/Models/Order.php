@@ -22,6 +22,7 @@ class Order extends Model
         'phone_number',
         'total_price',
         'status',
+        'status_order',
     ];
 
 

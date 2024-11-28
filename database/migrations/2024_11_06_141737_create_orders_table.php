@@ -24,6 +24,7 @@ return new class extends Migration
             $table->string('phone_number')->nullable();
             $table->bigInteger('total_price')->nullable();
             $table->enum('status',['paid','unpaid','pending'])->default('unpaid');
+            $table->enum('status_order',['pending','complete'])->nullable();
             $table->string('postal_code')->nullable();
             $table->string('note')->nullable();
             $table->timestamps();

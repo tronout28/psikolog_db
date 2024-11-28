@@ -35,7 +35,6 @@ class RatingController extends Controller
         ]);
     }
 
-
     protected function updateUserRating($userId)
     {
         // Calculate the average rating for the user
