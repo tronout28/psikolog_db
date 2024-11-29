@@ -38,7 +38,6 @@ class ChatMessageController extends Controller
         ]);
     }
     
-
     public function store(StoreMessageRequest $request)
     {
         $user = auth()->user();

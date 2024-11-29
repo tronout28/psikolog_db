@@ -11,6 +11,7 @@ use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
 
 class NewMessageSent implements ShouldBroadcastNow
 {
@@ -51,9 +52,15 @@ class NewMessageSent implements ShouldBroadcastNow
      */
     public function broadcastWith(): array
     {
-        return [
+        $data = [
             'chat_id' => $this->chatMessage->chat_id,
             'message' => $this->chatMessage->toArray(),
+            'user_id' => $this->chatMessage->user_id, // Make sure user_id is included here
         ];
+    
+        Log::info('Broadcast Data:', $data);
+    
+        return $data;
+    
     }
 }
