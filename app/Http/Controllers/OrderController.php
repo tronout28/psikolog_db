@@ -632,11 +632,17 @@ class OrderController extends Controller
 
     public function getbookorder()
     {
-        $orders = Order::with(['user','buku'])->whereNotNull('buku_id')->orderBy('created_at', 'desc')->get();
+        // Ambil order dengan status 'paid', dan hanya pesanan yang memiliki buku yang dipilih
+        $orders = Order::with(['user', 'buku'])
+            ->whereNotNull('buku_id')  // Memastikan ada buku yang dipesan
+            ->where('status', 'paid')  // Hanya ambil order dengan status 'paid'
+            ->orderBy('created_at', 'desc')
+            ->get();
 
         return response()->json([
             'success' => true,
             'data' => $orders,
         ]);
     }
+
 }
