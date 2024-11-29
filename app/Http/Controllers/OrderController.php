@@ -484,7 +484,7 @@ class OrderController extends Controller
             ], 400);
         }
 
-        $query = Order::with(['user']);
+        $query = Order::with(['user','buku','paket']);
 
         if ($type === 'buku') {
             $query->whereNotNull('buku_id'); 
