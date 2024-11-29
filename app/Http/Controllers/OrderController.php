@@ -490,6 +490,8 @@ class OrderController extends Controller
             $query->whereNotNull('buku_id')->with(['buku']); 
         } elseif ($type === 'paket') {
             $query->whereNotNull('paket_id')->with(['paket']); 
+        } else {
+            $query->with(['buku', 'paket']); 
         }
 
         $orders = $query->where('user_id', $user->id)->orderBy('created_at', 'desc')->get();
