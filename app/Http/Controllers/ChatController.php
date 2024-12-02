@@ -10,17 +10,16 @@ use App\Http\Requests\StoreChatRequest;
 
 class ChatController extends Controller
 {
-    
+
     public function index(GetChatRequest $request)
     {
         $data = $request->validated();
-    
         $isPrivate = 1;
-    
+
         if ($request->has('is_private')) {
             $isPrivate = (int) $data['is_private'];
         }
-    
+
         // Ambil chats dengan relasi ke paket_transactions untuk mendapatkan expiry_date
         $chats = Chat::where('is_private', $isPrivate)
             ->hasParticipant(auth()->user()->id)
@@ -28,34 +27,28 @@ class ChatController extends Controller
                 'lastmessage.user',
                 'participants.user',
                 'participants.user.paketTransaction' => function ($query) {
-                    $query->select('user_id', 'expiry_date', 'status')->where('status', 'active');
+                    $query->select('id', 'user_id', 'expiry_date') // Pastikan mengambil kolom expiry_date yang benar
+                          ->where('status', 'active'); // Tambahkan filter sesuai dengan kebutuhan Anda
                 }
             ])
-            ->latest('updated_at')
             ->get();
-    
-        // Tambahkan expiry_date ke level atas respons
-        $formattedChats = $chats->map(function ($chat) {
-            // Cari expiry_date untuk setiap peserta dengan transaksi aktif
-            $expiryDate = $chat->participants->map(function ($participant) {
-                // Pastikan peserta memiliki transaksi aktif dan ambil expiry_date yang sesuai
-                return $participant->user->paketTransaction && $participant->user->paketTransaction->status === 'active'
-                    ? $participant->user->paketTransaction->expiry_date
-                    : null;
-            })->filter()->first(); // Ambil expiry_date pertama yang ditemukan (bisa disesuaikan dengan logika Anda)
-    
-            return [
-                'id' => $chat->id,
-                'expiry_date' => $expiryDate,
-                'is_private' => $chat->is_private,
-                'updated_at' => $chat->updated_at,
-                'lastmessage' => $chat->lastmessage,
-                'participants' => $chat->participants,
-            ];
-        });
-    
-        return response()->json($formattedChats);
-    }    
+
+        // Ubah format expiry_date sesuai timezone jika diperlukan
+        foreach ($chats as $chat) {
+            if ($chat->participants) {
+                foreach ($chat->participants as $participant) {
+                    $paketTransaction = $participant->user->paketTransaction;
+                    if ($paketTransaction && $paketTransaction->expiry_date) {
+                        // Pastikan expiry_date dikonversi ke timezone yang sesuai
+                        $paketTransaction->expiry_date = \Carbon\Carbon::parse($paketTransaction->expiry_date)
+                            ->timezone('Asia/Jakarta'); // Ubah timezone sesuai dengan aplikasi Anda
+                    }
+                }
+            }
+        }
+
+        return response()->json($chats);
+    }
     
     /**
      * Store a newly created resource in storage.
