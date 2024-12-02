@@ -39,8 +39,11 @@ class ChatController extends Controller
             // Ambil expiry_date yang terkait dengan paketTransaction aktif per peserta
             $expiryDate = $chat->participants->map(function ($participant) {
                 // Cek apakah paketTransaction ada dan aktif
-                $paketTransaction = $participant->user->paketTransaction->firstWhere('status', 'active');
-                return $paketTransaction ? $paketTransaction->expiry_date : null;
+                if ($participant->user->paketTransaction) {
+                    $paketTransaction = $participant->user->paketTransaction->firstWhere('status', 'active');
+                    return $paketTransaction ? $paketTransaction->expiry_date : null;
+                }
+                return null; // jika tidak ada paketTransaction
             })->filter()->first(); // Mengambil expiry_date pertama yang valid
 
             return [
@@ -55,6 +58,7 @@ class ChatController extends Controller
 
         return response()->json($formattedChats);
     }
+
 
     /**
      * Store a newly created resource in storage.
