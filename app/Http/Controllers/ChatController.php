@@ -29,35 +29,28 @@ class ChatController extends Controller
                 'lastmessage.user',
                 'participants.user',
                 'participants.user.paketTransaction' => function ($query) {
-                    $query->select('user_id', 'expiry_date', 'status')->where('status', 'active');
+                    // Filter transaksi paket yang statusnya aktif dan hanya memilih kolom user_id, expiry_date, status
+                    $query->select('user_id', 'expiry_date', 'status')
+                        ->where('status', 'active');
                 }
             ])
-            ->latest('updated_at')
-            ->get();
+            ->get()
+            ->map(function ($chat) {
+                // Menyesuaikan expiry_date berdasarkan paketTransaction masing-masing user dalam chat
+                $chat->participants = $chat->participants->map(function ($participant) {
+                    // Mendapatkan paketTransaction yang aktif untuk setiap peserta
+                    $paketTransaction = $participant->user->paketTransaction;
+                    if ($paketTransaction) {
+                        $participant->expiry_date = $paketTransaction->expiry_date;  // Menambahkan expiry_date sesuai paket
+                    }
+                    return $participant;
+                });
+                return $chat;
+            });
 
-        $formattedChats = $chats->map(function ($chat) {
-            // Ambil expiry_date yang terkait dengan paketTransaction aktif per peserta
-            $expiryDate = $chat->participants->map(function ($participant) {
-                // Cek apakah paketTransaction ada dan aktif
-                if ($participant->user->paketTransaction) {
-                    $paketTransaction = $participant->user->paketTransaction->firstWhere('status', 'active');
-                    return $paketTransaction ? $paketTransaction->expiry_date : null;
-                }
-                return null; // jika tidak ada paketTransaction
-            })->filter()->first(); // Mengambil expiry_date pertama yang valid
-
-            return [
-                'id' => $chat->id,
-                'expiry_date' => $expiryDate,  // Gunakan expiry_date yang valid
-                'is_private' => $chat->is_private,
-                'updated_at' => $chat->updated_at,
-                'lastmessage' => $chat->lastmessage,
-                'participants' => $chat->participants,
-            ];
-        });
-
-        return response()->json($formattedChats);
+        return response()->json($chats);
     }
+
 
 
     /**
