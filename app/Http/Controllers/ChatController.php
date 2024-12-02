@@ -10,9 +10,7 @@ use App\Http\Requests\StoreChatRequest;
 
 class ChatController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
+    
     public function index(GetChatRequest $request)
     {
         $data = $request->validated();
@@ -30,7 +28,7 @@ class ChatController extends Controller
                 'lastmessage.user',
                 'participants.user',
                 'participants.user.paketTransaction' => function ($query) {
-                    $query->select('user_id', 'expiry_date')->where('status', 'active');
+                    $query->select('user_id', 'expiry_date', 'status')->where('status', 'active');
                 }
             ])
             ->latest('updated_at')
@@ -38,10 +36,13 @@ class ChatController extends Controller
     
         // Tambahkan expiry_date ke level atas respons
         $formattedChats = $chats->map(function ($chat) {
-            // Cari expiry_date peserta dengan transaksi aktif
+            // Cari expiry_date untuk setiap peserta dengan transaksi aktif
             $expiryDate = $chat->participants->map(function ($participant) {
-                return $participant->user->paketTransaction->expiry_date ?? null;
-            })->filter()->first(); // Ambil expiry_date pertama yang tersedia
+                // Pastikan peserta memiliki transaksi aktif dan ambil expiry_date yang sesuai
+                return $participant->user->paketTransaction && $participant->user->paketTransaction->status === 'active'
+                    ? $participant->user->paketTransaction->expiry_date
+                    : null;
+            })->filter()->first(); // Ambil expiry_date pertama yang ditemukan (bisa disesuaikan dengan logika Anda)
     
             return [
                 'id' => $chat->id,
@@ -54,7 +55,7 @@ class ChatController extends Controller
         });
     
         return response()->json($formattedChats);
-    }
+    }    
     
     /**
      * Store a newly created resource in storage.
